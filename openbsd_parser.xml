@@ -1,0 +1,84 @@
+<patternDefinitions>
+    <pattern name="patOpenBSDMod"><![CDATA[doas|pf]]></pattern>
+</patternDefinitions>
+<eventFormatRecognizer><![CDATA[<:gPatSyslogPRI><:gPatMon>\s+<:gPatDay>\s+<:gPatTime>\s+<:patOpenBSDMod>:\s]]></eventFormatRecognizer>
+<parsingInstructions>
+    <collectFieldsByRegex src="$_rawmsg">
+        <regex><![CDATA[<:gPatSyslogPRI><_mon:gPatMon>\s+<_day:gPatDay>\s+<_time:gPatTime>\s+<_body:gPatMesgBody>]]></regex>
+    </collectFieldsByRegex>
+    <setEventAttribute attr="deviceTime">toDateTime($_mon, $_day, $_time)</setEventAttribute>
+    <setEventAttribute attr="eventType">OpenBSD_Generic</setEventAttribute>
+    <setEventAttribute attr="eventAction">0</setEventAttribute>
+    <setEventAttribute attr="eventSeverity">1</setEventAttribute>
+    <collectFieldsByRegex src="$_body">
+        <regex><![CDATA[<procName:patOpenBSDMod>]]></regex>
+    </collectFieldsByRegex>
+
+    <setEventAttribute attr="eventType">combineMsgId("OpenBSD_", $procName, "_Generic")</setEventAttribute>
+    <choose>
+        <when test='$procName = "doas"'>
+            <switch>
+                <case>
+                    <!-- message specific parsing
+                    doas: admin ran command tcpdump -n -e -ttt -i pflog0 host 111.8.234.4 as root from /home/admin
+                    doas: admin ran command /bin/sh -c echo BECOME-SUCCESS-ztjxtnjesqmturhgiqomtpyllfkgkenb; /usr/local/bin/python3 as root from /home/admin
+                    doas: admin ran command su as root from /home/admin
+                    doas: admin ran command tcpdump -n -e -ttt -i pflog0 host 1.116.16.40 as root from /home/admin
+                -->
+                    <collectFieldsByRegex src="$_body">
+                        <regex><![CDATA[doas:\s+<user:gPatStr>\sran\scommand\s<command:gPatMesgBody>\sas\s<targetUser:gPatStr>\sfrom\s<:gPatStr>]]></regex>
+                    </collectFieldsByRegex>
+                    <setEventAttribute attr="eventType">"OpenBSD_Successful_SUDO_Exec"</setEventAttribute>
+                    <setEventAttribute attr="eventSeverity">4</setEventAttribute>
+                </case>
+                <case>
+                    <!-- message specific parsing
+                    <85>May 12 14:49:25 doas: failed auth for system
+              -->
+                    <collectFieldsByRegex src="$_body">
+                        <regex><![CDATA[doas:\s+failed auth for\s+<user:gPatStr>]]></regex>
+                    </collectFieldsByRegex>
+                    <setEventAttribute attr="eventType">"OpenBSD_Failed_SUDO_Exec"</setEventAttribute>
+                    <setEventAttribute attr="eventSeverity">4</setEventAttribute>
+                    <setEventAttribute attr="eventAction">1</setEventAttribute>
+                </case>
+            </switch>
+        </when>
+        <when test='$procName = "pf"'>
+            <switch>
+                <case>
+                    <!-- message specific parsing
+            <150>May 17 05:56:11 pf: May 17 05:56:10.745609 rule 1/(match) block in on ix0: 5.22.157.38.37999 > 123.123.1.2.389: udp 53 
+            <150>May 17 05:56:11 pf: May 17 05:56:10.572145 rule 1/(match) block in on ix0: 185.176.26.27.45682 > 222.123.45.4.3937: R 1571949896:1571949896(0) win 1200 
+            <150>May 17 05:56:28 pf: May 17 05:56:27.348862 rule 54/(match) block in on ix0: 46.232.112.19.40044 > 243.211.98.4.1919: S 3874162489:3874162489(0) win 1024 
+            <150>May 17 08:21:36 pf: May 17 08:21:36.248596 rule 1/(match) block in on ix0: 2649:123:1f2f:e4:64de:a201:a9ef:3c70.38624 > 2222:fd00:1234:9:3991:bb0:9c0a:b9e.22000: S 3572420616:3572420616(0) win 64800 <[|tcp]> [flowlabel 0x6adbd]
+         -->
+                    <collectFieldsByRegex src="$_body">
+                        <regex><![CDATA[pf:\s+<_mon:gPatMon>\s+<_day:gPatDay>\s+<_time:gPatTime>\.\d+\s+rule\s+<_rulenum:gPatInt>\/\(match\)\s<_action:gPatWord>\s+<direction:gPatWord>\s+on\s+<srcIntfName:gPatWord>:\s+<srcIpAddr:gPatIpAddr>\.<srcIpPort:gPatInt>\s+>\s+<destIpAddr:gPatIpAddr>\.<destIpPort:gPatInt>.*]]></regex>
+                    </collectFieldsByRegex>
+                    <setEventAttribute attr="eventType">"OpenBSD_PF"</setEventAttribute>
+                    <setEventAttribute attr="eventSeverity">4</setEventAttribute>
+                    <setEventAttribute attr="deviceTime">toDateTime($_mon, $_day, $_time)</setEventAttribute>
+                </case>
+                <case>
+                    <!-- message specific parsing
+            <150>May 17 05:56:09 pf: May 17 05:56:08.524354 rule 1/(match) block in on vlan32: fe80::7e5c:f8ff:fed8:5d5b > 2194:fd12:9:2::2: [|icmp6] 
+            <150>May 17 08:57:44 pf: May 17 08:57:44.009511 rule 1/(match) block in on vlan32: fe80::7e5c:f8ff:fed8:5d5b > fe80::200:5eff:fe00:120: [|icmp6]
+         -->
+                    <collectFieldsByRegex src="$_body">
+                        <regex><![CDATA[pf:\s+<_mon:gPatMon>\s+<_day:gPatDay>\s+<_time:gPatTime>\.\d+\s+rule\s+<_rulenum:gPatInt>\/\(match\)\s<_action:gPatWord>\s+<direction:gPatWord>\s+on\s+<srcIntfName:gPatWord>:\s+<srcIpAddr:gPatIpAddr>\s+>\s+<destIpAddr:gPatIpAddr>\:]]></regex>
+                    </collectFieldsByRegex>
+                    <setEventAttribute attr="eventSeverity">4</setEventAttribute>
+                    <setEventAttribute attr="deviceTime">toDateTime($_mon, $_day, $_time)</setEventAttribute>
+                </case>
+            </switch>
+
+            <choose>
+                <when test='$_action = "block"'>
+                    <setEventAttribute attr="eventAction">1</setEventAttribute>
+                    <setEventAttribute attr="eventType">OpenBSD-PF-Traffic-Blocked</setEventAttribute>
+                </when>
+            </choose>
+        </when>
+    </choose>
+</parsingInstructions>
