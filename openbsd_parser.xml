@@ -66,9 +66,10 @@
             <150>May 17 05:56:09 pf: May 17 05:56:08.524354 rule 1/(match) block in on vlan32: fe80::7e5c:f8ff:fed8:5d5b > 2194:fd12:9:2::2: [|icmp6] 
             <150>May 17 08:57:44 pf: May 17 08:57:44.009511 rule 1/(match) block in on vlan32: fe80::7e5c:f8ff:fed8:5d5b > fe80::200:5eff:fe00:120: [|icmp6]
             <150>May 17 20:31:00 pf: May 17 20:30:59.562924 rule 48/(match) pass in on em0: 13.209.116.151 > 199.116.2.120: icmp: echo request (DF)
+            <150>Jul 10 14:14:16 pf: Jul 10 14:14:16.239456 rule 75.some-anchor.7/(match) pass in on vlan99: 2649:123:1f2f:e4:64de:a201:a9ef:3c70 > ff02::1:ff00:1: [|icmp6]
          -->
                     <collectFieldsByRegex src="$_body">
-                        <regex><![CDATA[pf:\s+<_mon:gPatMon>\s+<_day:gPatDay>\s+<_time:gPatTime>\.\d+\s+rule\s+<_rulenum:gPatInt>\/\(match\)\s<_action:gPatWord>\s+<direction:gPatWord>\s+on\s+<srcIntfName:gPatWord>:\s+<srcIpAddr:gPatIpAddr>\s+>\s+<destIpAddr:gPatIpAddr>\:]]></regex>
+                        <regex><![CDATA[pf:\s+<_mon:gPatMon>\s+<_day:gPatDay>\s+<_time:gPatTime>\.\d+\s+rule\s+<_rulenum:gPatInt>.*\/\(match\)\s<_action:gPatWord>\s+<direction:gPatWord>\s+on\s+<srcIntfName:gPatWord>:\s+<srcIpAddr:gPatIpAddr>\s+>\s+<destIpAddr:gPatIpAddr>\:]]></regex>
                     </collectFieldsByRegex>
                     <setEventAttribute attr="eventSeverity">4</setEventAttribute>
                     <setEventAttribute attr="deviceTime">toDateTime($_mon, $_day, $_time)</setEventAttribute>
