@@ -52,9 +52,10 @@
             <150>May 17 05:56:11 pf: May 17 05:56:10.572145 rule 1/(match) block in on ix0: 185.176.26.27.45682 > 222.123.45.4.3937: R 1571949896:1571949896(0) win 1200 
             <150>May 17 05:56:28 pf: May 17 05:56:27.348862 rule 54/(match) block in on ix0: 46.232.112.19.40044 > 243.211.98.4.1919: S 3874162489:3874162489(0) win 1024 
             <150>May 17 08:21:36 pf: May 17 08:21:36.248596 rule 1/(match) block in on ix0: 2649:123:1f2f:e4:64de:a201:a9ef:3c70.38624 > 2222:fd00:1234:9:3991:bb0:9c0a:b9e.22000: S 3572420616:3572420616(0) win 64800 <[|tcp]> [flowlabel 0x6adbd]
+            <150>Jul 8 14:02:15 pf: Jul 08 14:02:14.924576 rule 75.some-anchor.7/(match) pass in on vlan99: 2649:123:1f2f:e4:64de:a201:a9ef:3c70.53137 > 2222:fd00:1234:9:3991:bb0:9c0a:b9e.161: C=publ [|snmp]
          -->
                     <collectFieldsByRegex src="$_body">
-                        <regex><![CDATA[pf:\s+<_mon:gPatMon>\s+<_day:gPatDay>\s+<_time:gPatTime>\.\d+\s+rule\s+<_rulenum:gPatInt>\/\(match\)\s<_action:gPatWord>\s+<direction:gPatWord>\s+on\s+<srcIntfName:gPatWord>:\s+<srcIpAddr:gPatIpAddr>\.<srcIpPort:gPatInt>\s+>\s+<destIpAddr:gPatIpAddr>\.<destIpPort:gPatInt>.*]]></regex>
+                        <regex><![CDATA[pf:\s+<_mon:gPatMon>\s+<_day:gPatDay>\s+<_time:gPatTime>\.\d+\s+rule\s+<_rulenum:gPatInt>.*\/\(match\)\s<_action:gPatWord>\s+<direction:gPatWord>\s+on\s+<srcIntfName:gPatWord>:\s+<srcIpAddr:gPatIpAddr>\.<srcIpPort:gPatInt>\s+>\s+<destIpAddr:gPatIpAddr>\.<destIpPort:gPatInt>.*]]></regex>
                     </collectFieldsByRegex>
                     <setEventAttribute attr="eventType">"OpenBSD_PF"</setEventAttribute>
                     <setEventAttribute attr="eventSeverity">4</setEventAttribute>
