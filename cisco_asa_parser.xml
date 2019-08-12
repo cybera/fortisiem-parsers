@@ -696,6 +696,14 @@ Dec 05 2008 13:02:16: %ASA-4-106023: Deny icmp src outside:192.168.0.1 dst wdmz:
                 <regex><![CDATA[Group \<<userGrp:patStrRightAngle>\> User \<<user:patStrRightAngle>\> IP \<<_srcStr:gPatStr>\><_proto:gPatProto><:gPatMesgBody>]]></regex>
             </collectAndSetAttrByRegex>
         </when>
+        <when test="$eventType = 'ASA-722033'">
+            <!--
+<165>Aug 12 2019 11:53:56 vpn : %ASA-5-722033: Group <SomeGroup> User <user.name> IP <192.168.0.1> First UDP SVC connection established for SVC session.
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Group \<<userGrp:patStrRightAngle>\> User \<<user:patStrRightAngle>\> IP \<<_srcStr:gPatStr>\> First <_proto:gPatProto> SVC<:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
         <!-- The specified address has been assigned to the given user -->
         <when test="$eventType = 'ASA-722051'">
             <!--
