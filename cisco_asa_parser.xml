@@ -1,0 +1,1332 @@
+<patternDefinitions>
+    <pattern name="patMesgIdCommon"><![CDATA[ASA]]></pattern>
+    <pattern name="patMesgIdSev"><![CDATA[\d]]></pattern>
+    <!-- pattern name="gPatStr"><![CDATA[(\d{1,3}.\d{1,3}.\d{1.3}.\d{1,3})|([^ ]+)]]></pattern -->
+    <pattern name="patStrDoubleQuoted"><![CDATA[[^"]*]]></pattern>
+    <pattern name="patStrSingleQuoted"><![CDATA[[^']*]]></pattern>
+    <pattern name="patStrEndColon"><![CDATA[[^:]*]]></pattern>
+    <pattern name="patStrEndSemiColon"><![CDATA[[^;]*]]></pattern>
+    <pattern name="patStrRightAngle"><![CDATA[[^>]*]]></pattern>
+    <pattern name="patStrRightParen"><![CDATA[[^\)]*]]></pattern>
+    <pattern name="patStrEndDot"><![CDATA[[^\.]*]]></pattern>
+    <pattern name="patStrEndSlash"><![CDATA[[^/]*]]></pattern>
+    <pattern name="patStrEndComma"><![CDATA[[^,]*]]></pattern>
+    <pattern name="patLeftAngle"><![CDATA[[<]]]></pattern>
+    <pattern name="patStrEndAt"><![CDATA[[^@]]]></pattern>
+    <pattern name="patStrEndQuestion"><![CDATA[[^\?]*]]></pattern>
+</patternDefinitions>
+<eventFormatRecognizer><![CDATA[ASA-<:gPatStr>?-?\d-\d+]]></eventFormatRecognizer>
+<parseByTemplate>
+    <templateFunction onSuccess="exit">libphParserUtils.so.Cisco_ASA_Template</templateFunction>
+</parseByTemplate>
+<parsingInstructions>
+    <!-- parsing common fields -->
+    <!-- The notation "<field:patternName>" used inside regex means assigning to "field" the substring that matches the pattern specified by "patternName", later on the field can be referenced as "$field" in test condition or functions. The system provides a few built-in fields as described below: $_rawmsg: the whole event message $_reportIp: the reporting IP address -->
+    <switch>
+        <!-- Begin with orginal? -->
+        <case>
+            <collectFieldsByRegex src="$_rawmsg">
+                <regex><![CDATA[<:gPatSyslogPRI>Original\s+Address=<reptDevIpAddr:gPatIpAddr>\s+<_mon:gPatMon>\s+<_day:gPatDay>\s+<_year:gPatYear>\s+<_time:gPatTime>(?:\s+<:gPatStr>)?\s*:\s+%<_idCommon:patMesgIdCommon>-<_severity:patMesgIdSev>-<_idNum:gPatInt>: <_body:gPatMesgBody>]]></regex>
+            </collectFieldsByRegex>
+            <setEventAttribute attr="deviceTime">toDateTime($_mon, $_day, $_year, $_time)</setEventAttribute>
+        </case>
+        <!-- Let's handle None NG header first, then with NG header ones -->
+        <!-- Without NG header, without ASA header -->
+        <case>
+            <collectFieldsByRegex src="$_rawmsg">
+                <regex><![CDATA[<:gPatSyslogPRI>\s*%<_idCommon:patMesgIdCommon>-<_severity:patMesgIdSev>-<_idNum:gPatInt>: <_body:gPatMesgBody>]]></regex>
+            </collectFieldsByRegex>
+        </case>
+        <!-- Without NG header, with ASA header without timestamp and with device ID(context or hostname or ip) -->
+        <case>
+            <collectFieldsByRegex src="$_rawmsg">
+                <regex><![CDATA[<:gPatSyslogPRI><_tmpStr:gPatStr>\s+%<_idCommon:patMesgIdCommon>-<_severity:patMesgIdSev>-<_idNum:gPatInt>:\s+<_body:gPatMesgBody>]]></regex>
+            </collectFieldsByRegex>
+        </case>
+        <!-- Without NG header, with ASA header with timestamp but no device ID -->
+        <case>
+            <collectFieldsByRegex src="$_rawmsg">
+                <regex><![CDATA[<:gPatSyslogPRI><_mon:gPatMon>\s+<_day:gPatDay>\s+<_year:gPatYear>\s+<_time:gPatTime>\s?:\s+%?%?<_idCommon:patMesgIdCommon>-<_severity:patMesgIdSev>-<_idNum:gPatInt>:\s+<_body:gPatMesgBody>]]></regex>
+            </collectFieldsByRegex>
+            <setEventAttribute attr="deviceTime">toDateTime($_mon, $_day, $_year, $_time)</setEventAttribute>
+        </case>
+        <!-- Without NG header, with ASA header with timestamp and with device ID(context or hostname or ip) -->
+        <case>
+            <collectFieldsByRegex src="$_rawmsg">
+                <regex><![CDATA[<:gPatSyslogPRI><_mon:gPatMon>\s+<_day:gPatDay>\s+<_year:gPatYear>\s+<_time:gPatTime>\s+<_tmpStr:gPatStr>\s+:\s+%<_idCommon:patMesgIdCommon>-<_severity:patMesgIdSev>-<_idNum:gPatInt>:\s+<_body:gPatMesgBody>]]></regex>
+            </collectFieldsByRegex>
+            <setEventAttribute attr="deviceTime">toDateTime($_mon, $_day, $_year, $_time)</setEventAttribute>
+        </case>
+        <!-- Without NG header, with ASA header with timestamp device ID(IP) -->
+        <!--
+<case>
+<collectFieldsByRegex src="$_rawmsg">
+<regex><![CDATA[<:gPatSyslogPRI>?<_mon:gPatMon> <_day:gPatDay> <_year:gPatYear> <_time:gPatTime> <reptDevIpAddr:gPatIpAddr>\s?: %<_idCommon:patMesgIdCommon>-<_severity:patMesgIdSev>-<_idNum:gPatInt>: <_body:gPatMesgBody>]]></regex>
+</collectFieldsByRegex>
+<setEventAttribute attr="deviceTime">toDateTime($_mon, $_day, $_year, $_time)</setEventAttribute>
+</case>
+-->
+        <!-- Without NG header, wtih ASA header with timestamp device ID(HostName) -->
+        <!--
+<case>
+<collectFieldsByRegex src="$_rawmsg">
+<regex><![CDATA[<:gPatSyslogPRI>?<_mon:gPatMon> <_day:gPatDay> <_year:gPatYear> <_time:gPatTime> <hostName:gPatStr>\s?: %<_idCommon:patMesgIdCommon>-<_severity:patMesgIdSev>-<_idNum:gPatInt>: <_body:gPatMesgBody>]]></regex>
+</collectFieldsByRegex>
+<setEventAttribute attr="deviceTime">toDateTime($_mon, $_day, $_year, $_time)</setEventAttribute>
+</case>
+-->
+        <!-- NG header, without ASA header -->
+        <case>
+            <collectFieldsByRegex src="$_rawmsg">
+                <regex><![CDATA[^\s*<:gPatSyslogPRI><_mon:gPatMon>\s+<_day:gPatDay>\s+<_year:gPatYear>\s+<_time:gPatTime>\s+(?:<reptDevIpAddr:gPatIpAddr>|<reptDevName:gPatHostName>)\s+%<_idCommon:patMesgIdCommon>-<_severity:patMesgIdSev>-<_idNum:gPatInt>:\s+<_body:gPatMesgBody>]]></regex>
+            </collectFieldsByRegex>
+            <setEventAttribute attr="deviceTime">toDateTime($_mon, $_day, $_year, $_time)</setEventAttribute>
+        </case>
+        <case>
+            <collectFieldsByRegex src="$_rawmsg">
+                <regex><![CDATA[<:gPatSyslogPRI>?<_mon:gPatMon>\s+<_day:gPatDay>\s+<_time:gPatTime>\s+<_host:gPatStr>\s+%<_idCommon:patMesgIdCommon>-<_severity:patMesgIdSev>-<_idNum:gPatInt>:\s+<_body:gPatMesgBody>]]></regex>
+            </collectFieldsByRegex>
+            <setEventAttribute attr="deviceTime">toDateTime($_mon, $_day, $_time)</setEventAttribute>
+            <switch>
+                <case>
+                    <collectFieldsByRegex src="$_host">
+                        <regex><![CDATA[<reptDevIpAddr:gPatIpAddr>]]></regex>
+                    </collectFieldsByRegex>
+                </case>
+                <default>
+                    <setEventAttribute attr="reptDevName">$_host</setEventAttribute>
+                </default>
+            </switch>
+        </case>
+        <!-- NG Header, with ASA header without timestamp and with device ID(context or hostname or ip) -->
+        <case>
+            <collectFieldsByRegex src="$_rawmsg">
+                <regex><![CDATA[<:gPatSyslogPRI>?<_mon:gPatMon>\s+<_day:gPatDay>\s+<_time:gPatTime>\s+<_host:gPatStr>\s+<_tmpStr:gPatStr>\s+%<_idCommon:patMesgIdCommon>-<_severity:patMesgIdSev>-<_idNum:gPatInt>: <_body:gPatMesgBody>]]></regex>
+            </collectFieldsByRegex>
+            <setEventAttribute attr="deviceTime">toDateTime($_mon, $_day, $_time)</setEventAttribute>
+            <switch>
+                <case>
+                    <collectFieldsByRegex src="$_host">
+                        <regex><![CDATA[<reptDevIpAddr:gPatIpAddr>]]></regex>
+                    </collectFieldsByRegex>
+                </case>
+                <default>
+                    <setEventAttribute attr="reptDevName">$_host</setEventAttribute>
+                </default>
+            </switch>
+        </case>
+        <!-- NG Header, with ASA header with timestamp and device ID(ip, hostname, context) -->
+        <case>
+            <collectFieldsByRegex src="$_rawmsg">
+                <regex><![CDATA[<:gPatSyslogPRI>?<:gPatMon>\s+<:gPatDay>\s+<:gPatTime>\s+<_host:gPatStr>\s+<_mon:gPatMon>\s+<_day:gPatDay>\s+<_year:gPatYear>\s+<_time:gPatTime>\s+<_tmpStr:gPatStr>\s+:\s+%<_idCommon:patMesgIdCommon>-<_severity:patMesgIdSev>-<_idNum:gPatInt>: <_body:gPatMesgBody>]]></regex>
+            </collectFieldsByRegex>
+            <setEventAttribute attr="deviceTime">toDateTime($_mon, $_day, $_year, $_time)</setEventAttribute>
+            <switch>
+                <case>
+                    <collectFieldsByRegex src="$_host">
+                        <regex><![CDATA[<reptDevIpAddr:gPatIpAddr>]]></regex>
+                    </collectFieldsByRegex>
+                    <setEventAttribute attr="reptDevIpAddr">$hostIpAddr</setEventAttribute>
+                </case>
+                <default>
+                    <setEventAttribute attr="reptDevName">$_host</setEventAttribute>
+                </default>
+            </switch>
+        </case>
+        <!-- New Event Format -->
+        <case>
+            <collectFieldsByRegex src="$_rawmsg">
+                <regex><![CDATA[<:gPatSyslogPRI>:<_mon:gPatMon>\s+<_day:gPatDay>\s+<_time:gPatTime>\s+<:gPatStr>:\s+%<_idCommon:patMesgIdCommon>-<:gPatStr>?-<_severity:patMesgIdSev>-<_idNum:gPatInt>:\s+<_body:gPatMesgBody>]]></regex>
+            </collectFieldsByRegex>
+            <setEventAttribute attr="deviceTime">toDateTime($_mon, $_day, $_time)</setEventAttribute>
+        </case>
+        <case>
+            <collectFieldsByRegex src="$_rawmsg">
+                <regex><![CDATA[%<_idCommon:patMesgIdCommon>-<_severity:patMesgIdSev>-<_idNum:gPatInt>: <_body:gPatMesgBody>]]></regex>
+            </collectFieldsByRegex>
+        </case>
+    </switch>
+    <when test="exist _tmpStr">
+        <switch>
+            <case>
+                <collectFieldsByRegex src="$_tmpStr">
+                    <regex><![CDATA[<reptDevIpAddr:gPatIpAddr>]]></regex>
+                </collectFieldsByRegex>
+            </case>
+            <default>
+                <setEventAttribute attr="_ContextORHostName">$_tmpStr</setEventAttribute>
+            </default>
+        </switch>
+    </when>
+    <setEventAttribute attr="eventType">combineMsgId($_idCommon, "-", $_idNum)</setEventAttribute>
+    <setEventAttribute attr="eventSeverity">1</setEventAttribute>
+    <setEventAttribute attr="eventAction">0</setEventAttribute>
+    <!-- event severity -->
+    <choose>
+        <when test="$_severity IN '6, 7'">
+            <setEventAttribute attr="eventSeverity">1</setEventAttribute>
+        </when>
+        <when test="$_severity = '1'">
+            <setEventAttribute attr="eventSeverity">10</setEventAttribute>
+        </when>
+        <when test="$_severity = '2'">
+            <setEventAttribute attr="eventSeverity">8</setEventAttribute>
+        </when>
+        <when test="$_severity IN '3, 4'">
+            <setEventAttribute attr="eventSeverity">5</setEventAttribute>
+        </when>
+        <when test="$_severity = '5'">
+            <setEventAttribute attr="eventSeverity">2</setEventAttribute>
+        </when>
+    </choose>
+    <setEventAttribute attr="totFlows">1</setEventAttribute>
+    <!-- message specific parsing -->
+    <choose>
+        <when test="$eventType = 'ASA-302013'">
+            <!--
+<134>Nov 28 2007 17:20:48: %ASA-6-302013: Built outbound TCP connection 76118 for outside:192.168.0.1/80 (192.168.0.1/80) to inside:192.168.20.31/3530 (192.168.0.1/5967)
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Built <_direction:gPatStr><_proto:gPatProto> connection <ipConnId:gPatInt> for <srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<_sport:gPatStr> \(<_postNATSrc:gPatStr>/<postNATSrcIpPort:gPatIpPort>\) to <destIntfName:patStrEndColon>:<_destStr:gPatStr>/<_dport:gPatStr> \(<_preNATDest:gPatStr>/<preNATDestIpPort:gPatIpPort>\)<_usrStr:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="_result">compIntfSecVal($srcIntfName, $destIntfName)</setEventAttribute>
+            <!-- only need to check whether we need to swap the src and dest attributes -->
+            <choose>
+                <when test="$_direction = 'inbound'">
+                    <when test="$_result = 'GREATER'">
+                        <swap>$srcIntfName, $destIntfName</swap>
+                        <swap>$_srcStr, $_destStr</swap>
+                        <swap>$_sport, $_dport</swap>
+                        <swap>$_postNATSrc, $_preNATDest</swap>
+                        <swap>$postNATSrcIpPort, $preNATDestIpPort</swap>
+                    </when>
+                </when>
+                <otherwise>
+                    <when test="$_result = 'LESS'">
+                        <swap>$srcIntfName, $destIntfName</swap>
+                        <swap>$_srcStr, $_destStr</swap>
+                        <swap>$_sport, $_dport</swap>
+                        <swap>$_postNATSrc, $_preNATDest</swap>
+                        <swap>$postNATSrcIpPort, $preNATDestIpPort</swap>
+                    </when>
+                </otherwise>
+            </choose>
+            <when test="exist _usrStr">
+                <switch>
+                    <case>
+                        <collectAndSetAttrByRegex src="$_usrStr">
+                            <regex><![CDATA[.*\(<user:patStrRightParen>\).*]]></regex>
+                        </collectAndSetAttrByRegex>
+                    </case>
+                    <default/>
+                </switch>
+            </when>
+        </when>
+        <when test="$eventType = 'ASA-302014'">
+            <!--
+<134>Nov 28 2007 17:22:08: %ASA-6-302014: Teardown TCP connection 76121 for outside:192.168.0.1/80 to inside:192.168.20.31/3531 duration 0:01:05 bytes 6410 TCP Reset-I
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Teardown <_proto:gPatProto> connection <ipConnId:gPatInt> for <destIntfName:patStrEndColon>:<_destStr:gPatStr>/<:gPatStr> to <srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<:gPatStr> duration <_connDuration:gPatTime> bytes <totBytes64:gPatInt><_usrStr:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <collectAndSetAttrFromAnotherEvent AnotherEventType="ASA-302013">
+                <when test="$ipConnId = $AnotherEvent.ipConnId">
+                    <setEventAttribute attr="destIntfName">$AnotherEvent.destIntfName</setEventAttribute>
+                    <setEventAttribute attr="destIpAddr">$AnotherEvent.destIpAddr</setEventAttribute>
+                    <setEventAttribute attr="destIpPort">$AnotherEvent.destIpPort</setEventAttribute>
+                    <setEventAttribute attr="srcIntfName">$AnotherEvent.srcIntfName</setEventAttribute>
+                    <setEventAttribute attr="srcIpAddr">$AnotherEvent.srcIpAddr</setEventAttribute>
+                    <setEventAttribute attr="srcIpPort">$AnotherEvent.srcIpPort</setEventAttribute>
+                    <setEventAttribute attr="_destStr">$AnotherEvent.destIpAddr</setEventAttribute>
+                    <setEventAttribute attr="_srcStr">$AnotherEvent.srcIpAddr</setEventAttribute>
+                </when>
+            </collectAndSetAttrFromAnotherEvent>
+            <setEventAttribute attr="durationMSec">calculateMSec($_connDuration)</setEventAttribute>
+            <when test="exist _usrStr">
+                <switch>
+                    <case>
+                        <collectAndSetAttrByRegex src="$_usrStr">
+                            <regex><![CDATA[.*\(<user:patStrRightParen>\).*]]></regex>
+                        </collectAndSetAttrByRegex>
+                    </case>
+                    <default/>
+                </switch>
+            </when>
+            <!-- clasdkla = -->
+        </when>
+        <when test="$eventType = 'ASA-302015'">
+            <!--
+<134>Nov 28 2007 17:20:48: %ASA-6-302015: Built outbound UDP connection 76116 for outside:192.168.0.1/53 (192.168.0.1/53) to inside:192.168.0.10/1041 (192.168.0.1/1411)
+<134>Mar 11 2008 00:11:20: %ASA-6-302015: Built outbound UDP connection 691155 for outside:192.168.0.1/123 (192.168.0.1/123) to NP Identity Ifc:192.168.0.1/123 (192.168.0.1/123)
+<166>Original Address=10.1.1.1 Nov 28 2013 23:40:23 gateway01 : %ASA-6-302015: Built inbound UDP connection 1573056625 for MGMT:procurve_manager_172.16.0.106/53 (procurve_manager_172.16.0.106/53)(schaumann\ADM-Holste) to Transfer-Intranet:PBG-DC01_192.170.171.10/53 (PBG-DC01_192.170.171.10/53)
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Built <_direction:gPatStr><_proto:gPatProto> connection <ipConnId:gPatInt> for <srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<_sport:gPatStr> \(<_postNATSrc:gPatStr>/<postNATSrcIpPort:gPatIpPort>\)<:gPatStr> to <destIntfName:patStrEndColon>:<_destStr:gPatStr>/<_dport:gPatStr> \(<_preNATDest:gPatStr>/<preNATDestIpPort:gPatIpPort>\)<_usrStr:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="_result">compIntfSecVal($srcIntfName, $destIntfName)</setEventAttribute>
+            <!-- only need to check whether we need to swap the src and dest attributes -->
+            <choose>
+                <when test="$_direction = 'inbound'">
+                    <when test="$_result = 'GREATER'">
+                        <swap>$srcIntfName, $destIntfName</swap>
+                        <swap>$_srcStr, $_destStr</swap>
+                        <swap>$_sport, $_dport</swap>
+                        <swap>$_postNATSrc, $_preNATDest</swap>
+                        <swap>$postNATSrcIpPort, $preNATDestIpPort</swap>
+                    </when>
+                </when>
+                <otherwise>
+                    <when test="$_result = 'LESS'">
+                        <swap>$srcIntfName, $destIntfName</swap>
+                        <swap>$_srcStr, $_destStr</swap>
+                        <swap>$_sport, $_dport</swap>
+                        <swap>$_postNATSrc, $_preNATDest</swap>
+                        <swap>$postNATSrcIpPort, $preNATDestIpPort</swap>
+                    </when>
+                </otherwise>
+            </choose>
+            <when test="exist _usrStr">
+                <switch>
+                    <case>
+                        <collectAndSetAttrByRegex src="$_usrStr">
+                            <regex><![CDATA[.*\(<user:patStrRightParen>\).*]]></regex>
+                        </collectAndSetAttrByRegex>
+                    </case>
+                    <default/>
+                </switch>
+            </when>
+        </when>
+        <when test="$eventType = 'ASA-302016'">
+            <!--
+<134>Nov 28 2007 17:20:48: %ASA-6-302016: Teardown UDP connection 76116 for outside:192.168.0.1/53 to inside:192.168.0.10/1041 duration 0:00:00 bytes 268
+<134>Mar 10 2008 23:56:17: %ASA-6-302016: Teardown UDP connection 689300 for outside:192.168.0.1/123 to NP Identity Ifc:192.168.0.1/123 duration 0:02:01 bytes 96
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Teardown <_proto:gPatProto> connection <ipConnId:gPatInt> for <destIntfName:patStrEndColon>:<_destStr:gPatStr>/<:gPatStr> to <srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<:gPatStr> duration <_connDuration:gPatTime> bytes <totBytes64:gPatInt><_usrStr:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <collectAndSetAttrFromAnotherEvent AnotherEventType="ASA-302015">
+                <when test="$ipConnId = $AnotherEvent.ipConnId">
+                    <setEventAttribute attr="destIntfName">$AnotherEvent.destIntfName</setEventAttribute>
+                    <setEventAttribute attr="destIpAddr">$AnotherEvent.destIpAddr</setEventAttribute>
+                    <setEventAttribute attr="destIpPort">$AnotherEvent.destIpPort</setEventAttribute>
+                    <setEventAttribute attr="srcIntfName">$AnotherEvent.srcIntfName</setEventAttribute>
+                    <setEventAttribute attr="srcIpAddr">$AnotherEvent.srcIpAddr</setEventAttribute>
+                    <setEventAttribute attr="srcIpPort">$AnotherEvent.srcIpPort</setEventAttribute>
+                    <setEventAttribute attr="_destStr">$AnotherEvent.destIpAddr</setEventAttribute>
+                    <setEventAttribute attr="_srcStr">$AnotherEvent.srcIpAddr</setEventAttribute>
+                </when>
+            </collectAndSetAttrFromAnotherEvent>
+            <setEventAttribute attr="durationMSec">calculateMSec($_connDuration)</setEventAttribute>
+            <when test="exist _usrStr">
+                <switch>
+                    <case>
+                        <collectAndSetAttrByRegex src="$_usrStr">
+                            <regex><![CDATA[.*\(<user:patStrRightParen>\).*]]></regex>
+                        </collectAndSetAttrByRegex>
+                    </case>
+                    <default/>
+                </switch>
+            </when>
+        </when>
+        <!-- icmpType not parsed since it is not clear which of the 3 tuples to get it from -->
+        <when test="$eventType = 'ASA-302020'">
+            <!--
+From syslog-ng: May 21 2007 14:00:34: %ASA-6-302020: Built ICMP connection for faddr 10.2.3.14/0 gaddr asa70/0 laddr asa70/0
+<134>Nov 28 2007 17:20:48: %ASA-6-302020: Built ICMP connection for faddr 192.168.0.30/0 gaddr 192.168.0.1/0 laddr 192.168.0.1/0
+-->
+            <switch>
+                <case>
+                    <collectAndSetAttrByRegex src="$_body">
+                        <regex><![CDATA[Built <_proto:gPatProto> connection for faddr <_srcStr:gPatStr>/<:gPatIpPort> gaddr <_preNATDest:gPatStr>/<:gPatIpPort> laddr <_destStr:gPatStr>/<:gPatIpPort>]]></regex>
+                    </collectAndSetAttrByRegex>
+                </case>
+                <case>
+                    <collectAndSetAttrByRegex src="$_body">
+                        <regex><![CDATA[Built <_direction:gPatStr><_proto:gPatProto> connection for faddr <_srcStr:gPatStr>/<:gPatIpPort> gaddr <_ipAddr:gPatStr>/<:gPatIpPort> laddr <_destStr:gPatStr>/<:gPatIpPort>]]></regex>
+                    </collectAndSetAttrByRegex>
+                    <choose>
+                        <when test="$_direction = 'outbound'">
+                            <swap>$_srcStr, $_destStr</swap>
+                            <setEventAttribute attr="_postNATSrc">$_ipAddr</setEventAttribute>
+                        </when>
+                        <otherwise>
+                            <setEventAttribute attr="_preNATDest">$_ipAddr</setEventAttribute>
+                        </otherwise>
+                    </choose>
+                </case>
+            </switch>
+        </when>
+        <when test="$eventType = 'ASA-302021'">
+            <!--
+<134>Nov 28 2007 17:20:50: %ASA-6-302021: Teardown ICMP connection for faddr 192.168.0.30/0 gaddr 192.168.0.1/0 laddr 192.168.0.1/0
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Teardown <_proto:gPatProto> connection for faddr <_srcStr:gPatStr>/<:gPatIpPort> gaddr <:gPatStr>/<:gPatIpPort> laddr <_destStr:gPatStr>/<:gPatIpPort>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-710005'">
+            <!--
+<135>Nov 28 2007 17:21:17: %ASA-7-710005: UDP request discarded from 192.168.0.10/138 to inside:192.168.15.255/138
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[<_proto:gPatProto> request discarded from <_srcStr:gPatStr>/<_sport:gPatStr> to <destIntfName:patStrEndColon>:<_destStr:gPatStr>/<_dport:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+            <setEventAttribute attr="eventSeverity">4</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-305011'">
+            <!--
+<134>Nov 28 2007 17:20:48: %ASA-6-305011: Built dynamic TCP translation from inside:192.168.20.31/3530 to outside:192.168.0.1/5967
+<134>Nov 28 2007 17:20:48: %ASA-6-305011: Built dynamic UDP translation from inside:192.168.0.10/1041 to outside:192.168.0.1/1411
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Built dynamic <_proto:gPatProto> translation from <srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<_sport:gPatStr> to <destIntfName:patStrEndColon>:<_postNATSrc:gPatStr>/<postNATSrcIpPort:gPatIpPort>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-305012'">
+            <!--
+<134>Nov 28 2007 17:22:18: %ASA-6-305012: Teardown dynamic TCP translation from inside:192.168.20.31/3530 to outside:192.168.0.1/5967 duration 0:01:30
+<134>Nov 28 2007 17:21:33: %ASA-6-305012: Teardown dynamic UDP translation from inside:192.168.0.10/1041 to outside:192.168.0.1/1411 duration 0:00:45
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Teardown dynamic <_proto:gPatProto> translation from <srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<_sport:gPatStr> to <destIntfName:patStrEndColon>:<_postNATSrc:gPatStr>/<postNATSrcIpPort:gPatIpPort> duration <_connDuration:gPatTime>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-305013'">
+            <!--
+<133>:Oct 03 09:32:53 EDT: %ASA-session-5-305013: Asymmetric NAT rules matched for forward and reverse flows; Connection for tcp src inside:10.11.0.92/63647 dst inside:172.16.61.156/3283 denied due to NAT reverse path failure
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[<:gPatMesgBody>\s+Connection for <_proto:gPatProto> src <srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<_sport:gPatStr> dst <destIntfName:patStrEndColon>:<_postNATSrc:gPatStr>/<postNATSrcIpPort:gPatIpPort> denied due to NAT reverse path failure]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-609001'">
+            <!--
+<135>:Oct 03 09:32:54 EDT: %ASA-session-7-609001: Built local-host outside:192.168.0.1
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Built <:gPatStr><srcIntfName:patStrEndColon>:<_srcStr:gPatStr>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-609002'">
+            <!--
+<135>Mar 29 18:21:57 192.168.19.65 %ASA-7-609002: Teardown local-host outside:192.168.0.1 duration 0:00:00
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Teardown <:gPatStr><srcIntfName:patStrEndColon>:<_srcStr:gPatStr> duration <_connDuration:gPatTime>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-106015'">
+            <!-- <134>Dec 04 2008 20:00:45: %ASA-6-106015: Deny TCP (no connection) from 192.168.0.1/443 to 192.168.0.2/5898 flags FIN ACK on interface outside -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Deny <_proto:gPatProto> \(no connection\) from <_srcStr:gPatStr>/<_sport:gPatStr> to <_destStr:gPatStr>/<_dport:gPatStr><:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-106023'">
+            <!--
+Dec 05 2008 13:02:16: %ASA-4-106023: Deny icmp src outside:192.168.0.1 dst wdmz:192.168.0.1 (type 8, code 0) by access-group "outside-in"
+<134>Nov 28 2007 17:22:18: %ASA-6-106023: Deny udp src inside:192.168.20.31/3530 dst outside:192.168.0.1/123 by access-group "inside_to_outside"[0x2a89d901,0x0]
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Deny <_proto:gPatProto><_body2:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <choose>
+                <when test="$_proto = 'icmp'">
+                    <collectAndSetAttrByRegex src="$_body2">
+                        <regex><![CDATA[src <srcIntfName:patStrEndColon>:<_srcStr:gPatStr> dst <destIntfName:patStrEndColon>:<_destStr:gPatStr> \(type <icmpType:gPatInt>, code <icmpCode:gPatInt>\)<:gPatMesgBody>]]></regex>
+                    </collectAndSetAttrByRegex>
+                </when>
+                <otherwise>
+                    <collectAndSetAttrByRegex src="$_body2">
+                        <regex><![CDATA[src <srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<_sport:gPatStr> dst <destIntfName:patStrEndColon>:<_destStr:gPatStr>/<_dport:gPatStr><:gPatMesgBody>]]></regex>
+                    </collectAndSetAttrByRegex>
+                </otherwise>
+            </choose>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <!-- start here -->
+        <when test="$eventType = 'ASA-111001'">
+            <!--
+<133>Jul 24 2008 03:14:34: %ASA-5-111001: Begin configuration: SJ-Dev-S-RH-VMW-01 writing to memory
+<133>Jul 24 2008 03:14:34: %ASA-5-111001: Begin configuration: 192.168.1.27 writing to memory
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Begin configuration: <_srcStr:gPatStr> writing to memory<:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-111004'">
+            <!--
+<133>Jul 24 2008 03:14:39: %ASA-5-111004: SJ-Dev-S-RH-VMW-01 end configuration: OK
+<133>Jul 24 2008 03:14:39: %ASA-5-111004: 192.168.1.27 end configuration: OK
+<133>Jul 24 2008 03:14:39: %ASA-5-111004: 192.168.1.27 end configuration: FAILED
+<133>Jul 24 2008 03:14:39: %ASA-5-111004: console end configuration: FAILED
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[<_srcStr:gPatStr> end configuration: <_status:gPatWord><:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <choose>
+                <when test="$_status = 'FAILED'">
+                    <setEventAttribute attr="eventAction">1</setEventAttribute>
+                    <setEventAttribute attr="eventType">combineMsgId($_idCommon,"-",$_idNum ,"-","failure")</setEventAttribute>
+                </when>
+                <when test="$_status = 'OK'">
+                    <setEventAttribute attr="eventAction">0</setEventAttribute>
+                    <setEventAttribute attr="eventType">combineMsgId($_idCommon,"-",$_idNum ,"-","success")</setEventAttribute>
+                </when>
+            </choose>
+        </when>
+        <when test="$eventType = 'ASA-111005'">
+            <!--
+<133>Jul 24 2008 03:14:32: %ASA-5-111005: SJ-Dev-S-RH-VMW-01 end configuration: OK
+<133>Jul 24 2008 03:14:32: %ASA-5-111005: 192.168.1.27 end configuration: OK
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[<_srcStr:gPatStr> end configuration: OK<:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-111007'">
+            <!--
+<133>Jul 24 2008 03:14:07: %ASA-5-111007: Begin configuration: SJ-Dev-S-RH-VMW-01 reading from terminal
+<133>Jul 24 2008 03:14:07: %ASA-5-111007: Begin configuration: 192.168.1.27 reading from terminal
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Begin configuration: <_srcStr:gPatStr> reading from terminal<:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-111008'">
+            <!--
+<133>Jul 24 2008 03:14:07: %ASA-5-111008: User 'enable_15' executed the 'configure terminal' command.
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[User '<user:patStrSingleQuoted>' executed the '<command:patStrSingleQuoted>' command<:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-111009'">
+            <!--
+<135>Apr 09 2012 18:20:19: %ASA-7-111009: User 'joeUser' executed cmd: show startup-config
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[User '<user:patStrSingleQuoted>' executed cmd:\s+<command:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-315011'">
+            <!--
+<134>Jul 24 2008 03:19:07: %ASA-6-315011: SSH session from SJ-Dev-S-RH-VMW-01 on interface inside for user "pix" terminated normally
+<134>Jul 24 2008 03:19:07: %ASA-6-315011: SSH session from 192.168.1.1 on interface inside for user "pix" terminated normally
+<134>Apr 09 2012 18:20:19: %ASA-6-315011: SSH session from 192.168.64.181 on interface inside for user "joeUser" disconnected by SSH server, reason: "Internal error" (0x00)
+-->
+            <switch>
+                <case>
+                    <collectAndSetAttrByRegex src="$_body">
+                        <regex><![CDATA[SSH session from <_srcStr:gPatStr> on interface <srcIntfName:gPatStr> for user "<user:patStrDoubleQuoted>" terminated normally<:gPatMesgBody>]]></regex>
+                    </collectAndSetAttrByRegex>
+                    <setEventAttribute attr="eventType">ASA-315011-Logoff</setEventAttribute>
+                </case>
+                <case>
+                    <collectAndSetAttrByRegex src="$_body">
+                        <regex><![CDATA[SSH session from <_srcStr:gPatStr> on interface <srcIntfName:gPatStr> for user "<user:patStrDoubleQuoted>" disconnected by SSH server, reason:\s+"<errReason:patStrDoubleQuoted>"]]></regex>
+                    </collectAndSetAttrByRegex>
+                    <choose>
+                        <when test="$errReason = 'Rejected by server'">
+                            <setEventAttribute attr="eventType">ASA-315011-LogonFailure</setEventAttribute>
+                        </when>
+                        <otherwise>
+                            <setEventAttribute attr="eventType">ASA-315011-LogonError</setEventAttribute>
+                        </otherwise>
+                    </choose>
+                </case>
+                <default/>
+            </switch>
+            <setEventAttribute attr="destIpPort">22</setEventAttribute>
+            <setEventAttribute attr="ipProto">6</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-113004'">
+            <!--
+<134>Jul 24 2008 03:23:37: %ASA-6-113004: AAA user authentication Successful : server = 192.168.0.40 : user = joeUser
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[AAA user authentication Successful : server = <:gPatStr>\s*:\s*user = <user:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-113005'">
+            <!--
+<134>Jul 24 2008 03:29:15: %ASA-6-113005: AAA user authentication Rejected : reason = AAA failure : server = 192.168.0.40 : user = joeUser
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[AAA user authentication Rejected :\s*<_detail:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <collectFieldsByKeyValuePair kvsep=" = " sep=" : " src="$_detail">
+                <attrKeyMap attr="user" key="user"/>
+                <attrKeyMap attr="srcIpAddr" key="user IP"/>
+            </collectFieldsByKeyValuePair>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-113008'">
+            <!--
+<134>Jul 24 2008 03:23:37: %ASA-6-113008: AAA transaction status ACCEPT : user = joeUser
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[AAA transaction status ACCEPT : user = <user:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-113019'">
+            <!-- <188>Jul 05 2011 13:40:18: %ASA-4-113019: Group = SEMSVPNGroup, Username = poppenheim, IP = 192.168.0.1, Session disconnected. Session Type: IPsec, Duration: 8h:31m:20s, Bytes xmt: 399047376, Bytes rcv: 12119913, Reason: User Requested -->
+            <collectAndSetAttrByKeyValuePair sep="," src="$_body">
+                <attrKeyMap attr="userGrp" key="Group = "/>
+                <attrKeyMap attr="user" key="Username = "/>
+                <attrKeyMap attr="srcIpAddr" key="IP = "/>
+                <attrKeyMap attr="_vpnduration" key="Duration: "/>
+                <attrKeyMap attr="errReason" key="Reason: "/>
+                <attrKeyMap attr="sentBytes64" key="Bytes xmt: "/>
+                <attrKeyMap attr="recvBytes64" key="Bytes rcv: "/>
+            </collectAndSetAttrByKeyValuePair>
+            <when test="exist _vpnduration">
+                <collectAndSetAttrByRegex src="$_vpnduration">
+                    <regex><![CDATA[<_hours:gPatInt>h:<_min:gPatInt>m:<_sec:gPatInt>s]]></regex>
+                </collectAndSetAttrByRegex>
+                <setEventAttribute attr="_vpnduration">combineMsgId($_hours,":",$_min,":",$_sec)</setEventAttribute>
+                <setEventAttribute attr="durationMSec">calculateMSec($_vpnduration)</setEventAttribute>
+            </when>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-611101'">
+            <!--
+<134>Jul 24 2008 03:23:37: %ASA-6-611101: User authentication succeeded: Uname: joeUser
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[User authentication succeeded: Uname: <user:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-611102'">
+            <!--
+<134>Jul 24 2008 03:29:15: %ASA-6-611102: User authentication failed: Uname: joeUser
+<166>Feb 27 2017 17:54:18: %ASA-6-611102: User authentication failed: IP address: 10.1.1.1, Uname: *****
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[User authentication failed: (?:IP address: <srcIpAddr:patStrEndComma>,\s*)?Uname: <_user:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <when test="not_matches($_user, '^\*+$')">
+                <setEventAttribute attr="user">$_user</setEventAttribute>
+            </when>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-611103'">
+            <!--
+<133>Apr 09 2012 18:20:19: %ASA-5-611103: User logged out: Uname: joeUser
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[User logged out: Uname: <user:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-605004'">
+            <!--
+<134>Jul 24 2008 03:29:15: %ASA-6-605004: Login denied from SJ-Dev-S-RH-VMW-01/44206 to inside:192.168.19.1/telnet for user "joeUser"
+<134>Jul 24 2008 03:29:15: %ASA-6-605004: Login denied from 192.168.1.46/44206 to inside:192.168.19.1/telnet for user "joeUser"
+<134>Jul 24 2008 03:29:15: %ASA-6-605004: Login denied from 192.168.1.46/44206 to inside:192.168.19.1/23 for user "joeUser"
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Login denied from <_srcStr:gPatStr>/<_sport:gPatStr> to <srcIntfName:patStrEndColon>:<_destStr:gPatStr>/<_dport:gPatStr> for user "<user:patStrDoubleQuoted>"<:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <!--switch>
+<case>
+<collectAndSetAttrByRegex src="$_src">
+<regex><![CDATA[<srcIpAddr:gPatIpAddr>]]></regex>
+</collectAndSetAttrByRegex>
+</case>
+<default>
+<setEventAttribute attr="srcName">$_src</setEventAttribute>
+</default>
+</switch>
+<switch>
+<case>
+<collectAndSetAttrByRegex src="$_dest">
+<regex><![CDATA[<destIpAddr:gPatIpAddr>]]></regex>
+</collectAndSetAttrByRegex>
+</case>
+<default>
+<setEventAttribute attr="destName">$_dest</setEventAttribute>
+</default>
+</switch-->
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-605005'">
+            <!--
+<134>Jul 24 2008 03:19:06: %ASA-6-605005: Login permitted from SJ-Dev-S-RH-VMW-01/44190 to inside:192.168.19.1/ssh for user "pix"
+<134>Jul 24 2008 03:19:06: %ASA-6-605005: Login permitted from 192.16.8.70/44190 to inside:192.168.19.1/ssh for user "pix"
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Login permitted from <_srcStr:gPatStr>/<_sport:gPatStr> to <srcIntfName:patStrEndColon>:<_destStr:gPatStr>/<_dport:gPatStr> for user "<user:patStrDoubleQuoted>"<:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <!--switch>
+<case>
+<collectAndSetAttrByRegex src="$_src">
+<regex><![CDATA[<srcIpAddr:gPatIpAddr>]]></regex>
+</collectAndSetAttrByRegex>
+</case>
+<default>
+<setEventAttribute attr="srcName">$_src</setEventAttribute>
+</default>
+</switch>
+<switch>
+<case>
+<collectAndSetAttrByRegex src="$_dest">
+<regex><![CDATA[<destIpAddr:gPatIpAddr>]]></regex>
+</collectAndSetAttrByRegex>
+</case>
+<default>
+<setEventAttribute attr="destName">$_dest</setEventAttribute>
+</default>
+</switch-->
+        </when>
+        <when test="$eventType = 'ASA-502103'">
+            <!--
+<133>Jul 24 2008 03:23:37: %ASA-5-502103: User priv level changed: Uname: enable_15 From: 1 To: 15
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[User priv level changed: Uname: <user:gPatStr> From: <:gPatInt> To: <:gPatInt><:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <!-- ASA SSL VPN Login -->
+        <when test="$eventType = 'ASA-722022'">
+            <!--
+<134>Aug 3 14:07:43 192.168.19.1 %ASA-6-722022: Group <AnyConnPolicy> User <minbo.fan> IP <192.168.0.1> TCP SVC connection established with compression
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Group \<<userGrp:patStrRightAngle>\> User \<<user:patStrRightAngle>\> IP \<<_srcStr:gPatStr>\><_proto:gPatProto><:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <!-- The specified address has been assigned to the given user -->
+        <when test="$eventType = 'ASA-722051'">
+            <!--
+<164>May 08 2013 12:38:06: %ASA-4-722051: Group <SBL> User <potts.amber> IP <10.1.1.1> Address <10.200.20.201> assigned to session
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Group \<<policyName:patStrRightAngle>\> User \<<user:patStrRightAngle>\> IP \<<remoteVpnIpAddr:gPatIpAddr>\> Address \<<localVpnIpAddr:gPatIpAddr>\>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="userGrp">$policyName</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-713228'">
+            <!--
+<166>Dec 14 2009 10:06:58: %ASA-6-713228: Group = ciscoclient, Username = joeUser, IP = 192.168.0.1, Assigned private IP address 10.2.15.62 to remote user
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[\s*Group\s+=\s+<userGrp:patStrEndComma>,\s*Username\s=\s*<user:patStrEndComma>,\s*IP\s*=\s*<_srcStr:gPatStr>,\s*Assigned\s+private\s+IP\s+address\s+<_postNATSrc:gPatStr>\s+to\s+remote\s+user<:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-713123'">
+            <!--
+<163>Jan 21 2014 13:24:16 10.140.2.10 : %ASA-3-713123: Group = 10.1.1.1, IP = 10.1.1.2, IKE lost contact with remote peer, deleting connection (keepalive type: DPD)
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Group\s+=\s+<userGrp:patStrEndComma>,\s+IP\s+=\s+<remoteVpnIpAddr:gPatIpAddr>,\s]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-713167'">
+            <!--
+<163>Dec 13 2010 09:24:42: %ASA-3-713167: Group = ciscoclient, Username = joeUser, IP = 192.168.0.1, Remote peer has failed user authentication - check configured username and password
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[\s*Group\s+=\s+<userGrp:patStrEndComma>,\s*Username\s=\s*<user:patStrEndComma>,\s*IP\s*=\s*<_srcStr:gPatStr>,\s<:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-734001'">
+            <!-- <134>Jul 01 2013 09:07:44 10.100.2.10 : %ASA-6-734001: DAP: User joeUser, Addr 192.168.0.1, Connection AnyConnect: The following DAP records were selected for this connection: DAP_POLICY1, DAP_POLICY2 -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[User\s+<user:patStrEndComma>,\s+Addr\s+<_srcStr:gPatStr>,\s+Connection\s+<vpnConnType:patStrEndColon>:\s]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <!-- ASA SSL VPN Logoff -->
+        <when test="$eventType = 'ASA-722023'">
+            <!--
+<134>Aug 3 16:48:26 192.168.19.1 %ASA-6-722023: Group <AnyConnPolicy> User <joeUser> IP <192.168.0.1> UDP SVC connection terminated without compression
+<134>Aug 3 16:48:26 192.168.19.1 %ASA-6-722023: Group <AnyConnPolicy> User <joeUser> IP <192.168.0.1> TCP SVC connection terminated with compression
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Group \<<policyName:patStrRightAngle>\> User \<<user:patStrRightAngle>\> IP \<<_srcStr:gPatStr>\><_proto:gPatProto><:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="userGrp">$policyName</setEventAttribute>
+        </when>
+        <!-- partha added Sep 21 2009 -->
+        <when test="$eventType = 'ASA-106001'">
+            <!-- <134>Dec 04 2008 20:00:45: PIX|ASA-2-106001: Inbound TCP connection denied from IP_address/port to IP_address/port flags tcp_flags on interface interface_name -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Inbound\s+<_proto:gPatProto>\s+connection\s+denied\s+from\s+<_srcStr:gPatStr>/<_sport:gPatStr>\s+to\s+<_destStr:gPatStr>/<_dport:gPatStr>\s+flags\s+<:gPatSentence>\s+on\s+interface\s+<srcIntfName:gPatStr>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-106002'">
+            <!-- <134>Dec 04 2008 20:00:45: PIX|ASA-2-106002: protocol Connection denied by outbound list acl_ID src inside_address dest outside_address -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[<_proto:gPatProto> Connection denied by <_direction:gPatStr> list <:gPatStr> src <_srcStr:gPatStr> dest <_destStr:gPatStr><:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-106006'">
+            <!-- <134>Dec 05 2008 13:02:16: %ASA-2-106006: Deny inbound UDP from 20.20.20.20/9996 to 10.10.10.10/8080 on interface outside.
+<134>Dec 05 2008 13:02:16: %%ASA-2-106006: Deny inbound UDP from 20.20.20.20/9996 to 10.10.10.10/8080 on interface outside.
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Deny <_direction:gPatStr><_proto:gPatProto> from <_srcStr:gPatStr>/<_sport:gPatStr> to <_destStr:gPatStr>/<_dport:gPatStr> on interface <srcIntfName:patStrEndDot>\.<:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-106007'">
+            <!-- <134>Dec 04 2008 20:00:45: PIX|ASA-2-106007: Deny inbound UDP from outside_address/outside_port to inside_address/inside_port due to DNS {Response|Query}
+<134>Dec 04 2008 20:00:45: %ASA-2-106007: Deny inbound UDP from 20.20.20.20/5667 to 192.168.20.20/8080 due to DNS {Response}
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Deny <_direction:gPatStr><_proto:gPatProto> from <_srcStr:gPatStr>/<_sport:gPatStr> to <_destStr:gPatStr>/<_dport:gPatStr> due to DNS <:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-106010'">
+            <!-- <134>Dec 04 2008 20:00:45: PIX|ASA-3-106010: Deny inbound protocol src interface_name:dest_address/dest_port dst interface_name:source_address/source_port -->
+            <!-- <134>Dec 04 2008 20:00:45: ASA-3-106010: Deny inbound udp src ether03:20.20.20.20/1050 dst ether05:192.168.20.20/1099 -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Deny <_direction:gPatStr><_proto:gPatProto> src <srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<_sport:gPatStr> dst <destIntfName:patStrEndColon>:<_destStr:gPatStr>/<_dport:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-106012'">
+            <!-- <134>Dec 04 2008 20:00:45: PIX|ASA-6-106012: Deny IP from IP_address to IP_address, IP options hex.
+<134>Dec 04 2008 20:00:45: ASA-6-106012: Deny IP from 192.168.20.20 to 10.20.20.20, IP options 6F.
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Deny IP from <_srcStr:gPatStr> to <_destStr:gPatStr>, <:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-106013'">
+            <!-- <134>Dec 04 2008 20:00:45: PIX|ASA-2-106013: Dropping echo request from IP_address to PAT address IP_address -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Dropping echo request from <_srcStr:gPatStr> to PAT address <_destStr:gPatStr><:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+            <setEventAttribute attr="ipProto">1</setEventAttribute>
+            <setEventAttribute attr="icmpType">8</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-106014'">
+            <!-- <134>Dec 04 2008 20:00:45: PIX|ASA-3-106014: Deny inbound icmp src interface_name: IP_address dst interface_name: IP_address (type dec, code dec)
+<134>Dec 04 2008 20:00:45: ASA-3-106014: Deny inbound icmp src ether03: 20.20.20.20 dst ether05: 192.168.20.20 (type 12, code 05)
+-->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Deny inbound icmp src <srcIntfName:patStrEndColon>:\s*<_srcStr:gPatStr> dst <destIntfName:patStrEndColon>:\s*<_destStr:gPatStr> \(type <icmpType:gPatInt>, code <icmpCode:gPatInt>\)]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+            <setEventAttribute attr="ipProto">1</setEventAttribute>
+            <setEventAttribute attr="icmpType">8</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-106016'">
+            <!-- <134>Dec 04 2008 20:00:45: PIX|ASA-2-106016: Deny IP spoof from (IP_address) to IP_address on interface interface_name. -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Deny IP spoof from \(<_srcStr:gPatStr>\) to <_destStr:gPatStr> on interface <srcIntfName:patStrEndDot>\.]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-106017'">
+            <!-- <134>Dec 04 2008 20:00:45: PIX|ASA-2-106017: Deny IP due to Land Attack from IP_address to IP_address -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Deny IP due to Land Attack from <_srcStr:gPatStr> to <_destStr:gPatStr><:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-106018'">
+            <!-- <134>Dec 05 2008 13:02:16: %ASA-2-106018: ICMP packet type echo denied by outbound list myAcl src 10.10.10.10 dest 20.20.20.20 -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[ICMP packet type echo denied by outbound list myAcl src <_srcStr:gPatStr> dest <_destStr:gPatStr>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-106020'">
+            <!-- <134>Dec 04 2008 20:00:45: PIX|ASA-2-106020: Deny IP teardrop fragment (size = number, offset = number) from IP_address to IP_address -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Deny IP teardrop fragment <:gPatMesgBody> from <_srcStr:gPatStr> to <_destStr:gPatStr><:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-106021'">
+            <!-- <134>Dec 04 2008 20:00:45: PIX|ASA-2-106021: Deny protocol reverse path check from source_address to dest_address on interface interface_name -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Deny <_proto:gPatProto> reverse path check from <_srcStr:gPatStr> to <_destStr:gPatStr> on interface <srcIntfName:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-106022'">
+            <!-- <134>Dec 04 2008 20:00:45: PIX|ASA-2-106022: Deny protocol connection spoof from source_address to dest_address on interface interface_name -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Deny <_proto:gPatProto> connection spoof from <_srcStr:gPatStr> to <_destStr:gPatStr> on interface <srcIntfName:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-106100'">
+            <!-- <134>Dec 04 2008 20:00:45: access-list acl_ID {permitted | denied | est-allowed} protocol interface_name/source_address(source_port) -> interface_name/dest_address(dest_port) hit-cnt number ({first hit | number-second interval}) -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[access-list <policyName:gPatStr><_action:gPatStr><_proto:gPatProto><srcIntfName:patStrEndSlash>/<_srcStr:gPatStr>\(<_sport:patStrRightParen>\) -><destIntfName:patStrEndSlash>/<_destStr:gPatStr>\(<_dport:patStrRightParen>\) <:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <choose>
+                <when test="$_action = 'permitted'">
+                    <setEventAttribute attr="eventAction">0</setEventAttribute>
+                    <setEventAttribute attr="eventType">combineMsgId($_idCommon,"-",$_idNum ,"-","permit")</setEventAttribute>
+                </when>
+                <when test="$_action = 'denied'">
+                    <setEventAttribute attr="eventAction">1</setEventAttribute>
+                    <setEventAttribute attr="eventType">combineMsgId($_idCommon,"-",$_idNum ,"-","deny")</setEventAttribute>
+                </when>
+                <when test="$_action = 'est-allowed'">
+                    <setEventAttribute attr="eventAction">0</setEventAttribute>
+                    <setEventAttribute attr="eventType">combineMsgId($_idCommon,"-",$_idNum ,"-","permit")</setEventAttribute>
+                </when>
+            </choose>
+        </when>
+        <when test="$eventType = 'ASA-107001'">
+            <!-- %PIX|ASA-1-107001: RIP auth failed from IP_address: version=number, type=string, mode=string, sequence=number on interface interface_name -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[RIP auth failed from <_srcStr:gPatStr>: <:gPatStr><:gPatStr><:gPatStr><:gPatStr> on interface <srcIntfName:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-108003'">
+            <!-- PIX|ASA-2-108003: Terminating ESMTP/SMTP connection; malicious pattern detected in the mail address from source_interface:source_address/source_port to dest_interface:dest_address/dset_port. Data:string -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Terminating ESMTP/SMTP connection; malicious pattern detected in the mail address from <srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<_sport:gPatStr> to <destIntfName:patStrEndColon>:<_destStr:gPatStr>/<_dport:patStrEndColon>\.<:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-108002'">
+            <!-- %PIX|ASA-2-108002: SMTP replaced string: out source_address in inside_address data: string -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[SMTP replaced "<:patStrDoubleQuoted>": out <_srcStr:gPatStr> in <_srcStr:gPatStr><:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-108006'">
+            <!-- %PIX|ASA-7-108006: Detected ESMTP size violation from src_ifc:sip|sport to dest_ifc:dip|dport;declared size is: decl_size, actual size is act_size. -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Detected ESMTP size violation from <srcIntfName:patStrEndColon>:<_srcStr:gPatStr>\|<_sport:gPatStr> to <destIntfName:patStrEndColon>:<_destStr:gPatStr>\|<_dport:patStrEndSemiColon>;<:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-109002'">
+            <!-- %PIX|ASA-6-109002: Auth from inside_address/inside_port to outside_address/outside_port failed (server IP_address failed) on interface interface_name. -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Auth from <_srcStr:gPatStr>/<_sport:gPatStr> to <_destStr:gPatStr>/<_dport:gPatStr> failed \(<:patStrRightParen>\) on interface <srcIntfName:patStrEndDot>\.]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-109003'">
+            <!-- %PIX|ASA-6-109003: Auth from inside_address to outside_address/outside_port failed (all servers failed) on interface interface_name. -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Auth from <_srcStr:gPatStr> to <_destStr:gPatStr>/<_dport:gPatStr> failed .* on interface <srcIntfName:patStrEndDot>\.]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-109005'">
+            <!-- %PIX|ASA-6-109005: Authentication succeeded for user user from inside_address/inside_port to outside_address/outside_port on interface interface_name. -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Authentication succeeded for user <user:gPatStr> from <_srcStr:gPatStr>/<_sport:gPatStr> to <_destStr:gPatStr>/<_dport:gPatStr> on interface <srcIntfName:patStrEndDot>\.]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-109006'">
+            <!-- %PIX|ASA-6-109006: Authentication failed for user user from inside_address/inside_port to outside_address/outside_port on interface interface_name. -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Authentication failed for user <user:gPatStr> from <_srcStr:gPatStr>/<_sport:gPatStr> to <_destStr:gPatStr>/<_dport:gPatStr> on interface <srcIntfName:patStrEndDot>\.]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-109010'">
+            <!-- %PIX|ASA-3-109010: Auth from inside_address/inside_port to outside_address/outside_port failed (too many pending auths) on interface interface_name. -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Auth from <_srcStr:gPatStr>/<_sport:gPatStr> to <_destStr:gPatStr>/<_dport:gPatStr> failed \(too many pending auths\) on interface <srcIntfName:patStrEndColon>\.]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType IN 'ASA-716007, ASA-716039'">
+            <!-- <164>Jun 08 2010 14:14:14: %ASA-4-716007: Group <Tech_Policy> User <joeUser> IP <192.168.0.1> WebVPN Unable to creatte session. -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Group\s<:patLeftAngle><userGrp:patStrRightAngle>>\sUser\s<:patLeftAngle><user:patStrRightAngle>>\sIP\s<:patLeftAngle><_srcStr:patStrRightAngle>>\s<:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-304001'">
+            <!-- <165>Jul 09 2010 11:35:15: %ASA-5-304001: 10.10.49.84 Accessed URL 192.168.0.1:http://www.abc.com/dynamic/images/skin/slider_construct/hp_view_all_slider_top.gif -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[<_srcStr:gPatStr>\s+Accessed URL\s+<_destStr:gPatStr>:<appTransportProto:patStrEndColon>://<destName:patStrEndSlash><uriStem:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">0</setEventAttribute>
+            <setEventAttribute attr="destIpPort">convertStrToIntIpPort($appTransportProto)</setEventAttribute>
+            <setEventAttribute attr="_proto">TCP</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-304002'">
+            <!-- <165>Jul 15 2010 16:26:24: %ASA-5-304002: Access denied URL http://abc.com/profilewidget/group/random/000000/ffffff/71917374@N00.jpg SRC 10.10.12.115 DEST 10.1.1.1 on interface inside -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Access denied URL\s+<appTransportProto:patStrEndColon>://<destName:patStrEndSlash><_urlInfo:gPatStr>\s+SRC\s+<_srcStr:gPatStr>\s+DEST\s+<_destStr:gPatStr>\s+on interface\s+<srcIntfName:gPatStr>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">0</setEventAttribute>
+            <setEventAttribute attr="destIpPort">convertStrToIntIpPort($appTransportProto)</setEventAttribute>
+            <setEventAttribute attr="_proto">TCP</setEventAttribute>
+            <switch>
+                <case>
+                    <collectAndSetAttrByRegex src="$_urlInfo">
+                        <regex><![CDATA[<uriStem:patStrEndQuestion>\?<uriQuery:gPatMesgBody>]]></regex>
+                    </collectAndSetAttrByRegex>
+                </case>
+                <case>
+                    <collectAndSetAttrByRegex src="$_urlInfo">
+                        <regex><![CDATA[<uriStem:gPatMesgBody>]]></regex>
+                    </collectAndSetAttrByRegex>
+                </case>
+            </switch>
+        </when>
+        <when test="$eventType = 'ASA-303002'">
+            <!-- <166>Jul 09 2010 14:40:27: %ASA-6-303002: FTP connection from inside:10.15.70.91/3328 to DMZ:10.1.1.14/21, user itms Stored file jpeg43.jpg] -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[FTP connection from <srcIntfName:patStrEndColon>:<_srcStr:patStrEndSlash>/<srcIpPort:gPatInt>\s+to\s+<destIntfName:patStrEndColon>:<_destStr:patStrEndSlash>/<destIpPort:gPatIpPort>,\s+user\s+<user:gPatStr>\s+<_action:gPatStr>\s+file\s+<fileName:gPatStr>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">0</setEventAttribute>
+            <setEventAttribute attr="_proto">TCP</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-305006'">
+            <!-- <163>Aug 09 2010 01:40:15: %ASA-3-305006: portmap translation creation failed for udp src inside:192.168.0.1/3866 dst inside:192.168.0.2/8612 -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[portmap translation creation failed for\s+<_proto:gPatStr>\s+src <srcIntfName:patStrEndColon>:<_srcStr:patStrEndSlash>/<srcIpPort:gPatInt>\s+dst\s+<destIntfName:patStrEndColon>:<_destStr:patStrEndSlash>/<destIpPort:gPatIpPort>]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-710003'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[<_proto:gPatStr>\s+access denied by ACL from\s+<_srcStr:gPatStr>/<srcIpPort:gPatInt>\s+to\s+<destIntfName:patStrEndColon>:<_destStr:gPatStr>/<destIpPort:gPatInt>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-338001'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Dynamic\s+filter\s+monitored\s+blacklisted\s+<_proto:gPatStr>\s+traffic\s+from\s+<srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<srcIpPort:gPatIpPort>\s+\(<_postNATSrc:gPatStr>/<postNATSrcIpPort:gPatIpPort>\)\s+to\s+<destIntfName:gPatStrEndColon>:<_destStr:gPatStr>/<destIpPort:gPatIpPort>\s+\(<_preNATDest:gPatStr>/<preNATDestIpPort:gPatIpPort>\),\s+source malicious address resolved from local or dynamic list:\s+<destDomain:patStrEndComma>,\s+threat-level:\s+<threatLevel:gPatStr>,\s+category:\s+<threatCategory:gPatStr>.*]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-338002'">
+            <switch>
+                <case>
+                    <collectAndSetAttrByRegex src="$_body">
+                        <regex><![CDATA[Dynamic\s+filter\s+monitored\s+blacklisted\s+<_proto:gPatStr>\s+traffic\s+from\s+<srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<srcIpPort:gPatIpPort>\s+\(<_postNATSrc:gPatStr>/<postNATSrcIpPort:gPatIpPort>\)\s+to\s+<destIntfName:gPatStrEndColon>:<_destStr:gPatStr>/<destIpPort:gPatIpPort>\s+\(<_preNATDest:gPatStr>/<preNATDestIpPort:gPatIpPort>\),\s+destination malicious address resolved from local or dynamic list:\s+<destDomain:patStrEndComma>,\s+threat-level:\s+<threatLevel:gPatStr>,\s+category:\s+<threatCategory:gPatStr>.*]]></regex>
+                    </collectAndSetAttrByRegex>
+                </case>
+                <case>
+                    <collectAndSetAttrByRegex src="$_body">
+                        <regex><![CDATA[Dynamic Filter monitored blacklisted\s+<_proto:gPatStr>\s+traffic\s+from\s+<srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<srcIpPort:gPatIpPort>\s+\(<_postNATSrc:gPatStr>/<postNATSrcIpPort:gPatIpPort>\)\s+to\s+<destIntfName:gPatStrEndColon>:<_destStr:gPatStr>/<destIpPort:gPatIpPort>\s+\(<_preNATDest:gPatStr>/<preNATDestIpPort:gPatIpPort>\),\s+destination\s+<:gPatIpAddr>\s+resolved from dynamic list:\s+<destDomain:patStrEndComma>,\s+threat-level:\s+<threatLevel:gPatStr>,\s+category:\s+<threatCategory:gPatStr>]]></regex>
+                    </collectAndSetAttrByRegex>
+                </case>
+            </switch>
+        </when>
+        <when test="$eventType = 'ASA-338003'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Dynamic\s+filter\s+monitored\s+blacklisted\s+<_proto:gPatStr>\s+traffic\s+from\s+<srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<srcIpPort:gPatIpPort>\s+\(<_postNATSrc:gPatStr>/<postNATSrcIpPort:gPatIpPort>\)\s+to\s+<destIntfName:gPatStrEndColon>:<_destStr:gPatStr>/<destIpPort:gPatIpPort>\s+\(<_preNATDest:gPatStr>/<preNATDestIpPort:gPatIpPort>\),\s+source malicious address resolved from local or dynamic list:\s+<destDomain:patStrEndComma>,\s+threat-level:\s+<threatLevel:gPatStr>,\s+category:\s+<threatCategory:gPatStr>.*]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-338004'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Dynamic\s+filter\s+monitored\s+blacklisted\s+<_proto:gPatStr>\s+traffic\s+from\s+<srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<srcIpPort:gPatIpPort>\s+\(<_postNATSrc:gPatStr>/<postNATSrcIpPort:gPatIpPort>\)\s+to\s+<destIntfName:gPatStrEndColon>:<_destStr:gPatStr>/<destIpPort:gPatIpPort>\s+\(<_preNATDest:gPatStr>/<preNATDestIpPort:gPatIpPort>\),\s+destination malicious address resolved from local or dynamic list:\s+<destDomain:patStrEndComma>,\s+threat-level:\s+<threatLevel:gPatStr>,\s+category:\s+<threatCategory:gPatStr>.*]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-338005'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Dynamic\s+filter\s+dropped\s+blacklisted\s+<_proto:gPatStr>\s+traffic\s+from\s+<srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<srcIpPort:gPatIpPort>\s+\(<_postNATSrc:gPatStr>/<postNATSrcIpPort:gPatIpPort>\)\s+to\s+<destIntfName:gPatStrEndColon>:<_destStr:gPatStr>/<destIpPort:gPatIpPort>\s+\(<_preNATDest:gPatStr>/<preNATDestIpPort:gPatIpPort>\),\s+source malicious address resolved from local or dynamic list:\s+<destDomain:patStrEndComma>,\s+threat-level:\s+<threatLevel:gPatStr>,\s+category:\s+<threatCategory:gPatStr>.*]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-338006'">
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+            <switch>
+                <case>
+                    <collectAndSetAttrByRegex src="$_body">
+                        <regex><![CDATA[Dynamic\s+filter\s+dropped\s+blacklisted\s+<_proto:gPatStr>\s+traffic\s+from\s+<srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<srcIpPort:gPatIpPort>\s+\(<_postNATSrc:gPatStr>/<postNATSrcIpPort:gPatIpPort>\)\s+to\s+<destIntfName:gPatStrEndColon>:<_destStr:gPatStr>/<destIpPort:gPatIpPort>\s+\(<_preNATDest:gPatStr>/<preNATDestIpPort:gPatIpPort>\),\s+destination malicious address resolved from local or dynamic list:\s+<destDomain:patStrEndComma>,\s+threat-level:\s+<threatLevel:gPatStr>,\s+category:\s+<threatCategory:gPatStr>.*]]></regex>
+                    </collectAndSetAttrByRegex>
+                </case>
+                <case>
+                    <collectAndSetAttrByRegex src="$_body">
+                        <regex><![CDATA[Dynamic\s+Filter\s+dropped\s+blacklisted\s+<_proto:gPatStr>\s+traffic\s+from\s+<srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<srcIpPort:gPatIpPort>\s+\(<_postNATSrc:gPatStr>/<postNATSrcIpPort:gPatIpPort>\)\s+to\s+<destIntfName:gPatStrEndColon>:<_destStr:gPatStr>/<destIpPort:gPatIpPort>\s+\(<_preNATDest:gPatStr>/<preNATDestIpPort:gPatIpPort>\),\s+destination\s+<:gPatIpAddr>\s+resolved from dynamic list:\s+<destDomain:patStrEndComma>,\s+threat-level:\s+<threatLevel:gPatStr>,\s+category:\s+<threatCategory:gPatStr>]]></regex>
+                    </collectAndSetAttrByRegex>
+                </case>
+            </switch>
+        </when>
+        <when test="$eventType = 'ASA-338007'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Dynamic\s+filter\s+dropped\s+blacklisted\s+<_proto:gPatStr>\s+traffic\s+from\s+<srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<srcIpPort:gPatIpPort>\s+\(<_postNATSrc:gPatStr>/<postNATSrcIpPort:gPatIpPort>\)\s+to\s+<destIntfName:gPatStrEndColon>:<_destStr:gPatStr>/<destIpPort:gPatIpPort>\s+\(<_preNATDest:gPatStr>/<preNATDestIpPort:gPatIpPort>\),\s+source malicious address resolved from local or dynamic list:\s+<destDomain:patStrEndComma>,\s+threat-level:\s+<threatLevel:gPatStr>,\s+category:\s+<threatCategory:gPatStr>.*]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <when test="$eventType = 'ASA-338008'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Dynamic\s+filter\s+dropped\s+blacklisted\s+<_proto:gPatStr>\s+traffic\s+from\s+<srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<srcIpPort:gPatIpPort>\s+\(<_postNATSrc:gPatStr>/<postNATSrcIpPort:gPatIpPort>\)\s+to\s+<destIntfName:gPatStrEndColon>:<_destStr:gPatStr>/<destIpPort:gPatIpPort>\s+\(<_preNATDest:gPatStr>/<preNATDestIpPort:gPatIpPort>\),\s+destination malicious address resolved from local or dynamic list:\s+<destDomain:patStrEndComma>,\s+threat-level:\s+<threatLevel:gPatStr>,\s+category:\s+<threatCategory:gPatStr>.*]]></regex>
+            </collectAndSetAttrByRegex>
+            <setEventAttribute attr="eventAction">1</setEventAttribute>
+        </when>
+        <!-- white listed traffic -->
+        <when test="$eventType = 'ASA-338101'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Dynamic\s+filter\s+<_action:gPatStr>\s+whitelisted\s+<_proto:gPatStr>\s+traffic\s+from\s+<srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<srcIpPort:gPatIpPort>\s+\(<_postNATSrc:gPatStr>/<postNATSrcIpPort:gPatIpPort>\)\s+to\s+<destIntfName:gPatStrEndColon>:<_destStr:gPatStr>/<destIpPort:gPatIpPort>\s+\(<_preNATDest:gPatStr>/<preNATDestIpPort:gPatIpPort>\),\s+source malicious address resolved from local or dynamic list:\s+<destDomain:patStrEndComma>.*]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-338102'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Dynamic\s+filter\s+<_action:gPatStr>\s+whitelisted\s+<_proto:gPatStr>\s+traffic\s+from\s+<srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<srcIpPort:gPatIpPort>\s+\(<_postNATSrc:gPatStr>/<postNATSrcIpPort:gPatIpPort>\)\s+to\s+<destIntfName:gPatStrEndColon>:<_destStr:gPatStr>/<destIpPort:gPatIpPort>\s+\(<_preNATDest:gPatStr>/<preNATDestIpPort:gPatIpPort>\),\s+destination malicious address resolved from local or dynamic list:\s+<destDomain:patStrEndComma>.*]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-338103'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Dynamic\s+filter\s+<_action:gPatStr>\s+whitelisted\s+<_proto:gPatStr>\s+traffic\s+from\s+<srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<srcIpPort:gPatIpPort>\s+\(<_postNATSrc:gPatStr>/<postNATSrcIpPort:gPatIpPort>\)\s+to\s+<destIntfName:gPatStrEndColon>:<_destStr:gPatStr>/<destIpPort:gPatIpPort>\s+\(<_preNATDest:gPatStr>/<preNATDestIpPort:gPatIpPort>\),\s+source malicious address resolved from local or dynamic list:\s+<destDomain:patStrEndComma>.*]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-338104'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Dynamic\s+filter\s+<_action:gPatStr>\s+whitelisted\s+<_proto:gPatStr>\s+traffic\s+from\s+<srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<srcIpPort:gPatIpPort>\s+\(<_postNATSrc:gPatStr>/<postNATSrcIpPort:gPatIpPort>\)\s+to\s+<destIntfName:gPatStrEndColon>:<_destStr:gPatStr>/<destIpPort:gPatIpPort>\s+\(<_preNATDest:gPatStr>/<preNATDestIpPort:gPatIpPort>\),\s+destination malicious address resolved from local or dynamic list:\s+<destDomain:patStrEndComma>.*]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <!-- greylisted traffic -->
+        <when test="$eventType = 'ASA-338201'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Dynamic\s+filter\s+monitored\s+greylisted\s+<_proto:gPatStr>\s+traffic\s+from\s+<srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<srcIpPort:gPatIpPort>\s+\(<_postNATSrc:gPatStr>/<postNATSrcIpPort:gPatIpPort>\)\s+to\s+<destIntfName:gPatStrEndColon>:<_destStr:gPatStr>/<destIpPort:gPatIpPort>\s+\(<_preNATDest:gPatStr>/<preNATDestIpPort:gPatIpPort>\),\s+source malicious address resolved from local or dynamic list:\s+<destDomain:patStrEndComma>,\s+threat-level:\s+<threatLevel:gPatStr>,\s+category:\s+<threatCategory:gPatStr>.*]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-338202'">
+            <switch>
+                <case>
+                    <collectAndSetAttrByRegex src="$_body">
+                        <regex><![CDATA[Dynamic\s+filter\s+monitored\s+greylisted\s+<_proto:gPatStr>\s+traffic\s+from\s+<srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<srcIpPort:gPatIpPort>\s+\(<_postNATSrc:gPatStr>/<postNATSrcIpPort:gPatIpPort>\)\s+to\s+<destIntfName:gPatStrEndColon>:<_destStr:gPatStr>/<destIpPort:gPatIpPort>\s+\(<_preNATDest:gPatStr>/<preNATDestIpPort:gPatIpPort>\),\s+destination malicious address resolved from local or dynamic list:\s+<destDomain:patStrEndComma>,\s+threat-level:\s+<threatLevel:gPatStr>,\s+category:\s+<threatCategory:gPatStr>.*]]></regex>
+                    </collectAndSetAttrByRegex>
+                </case>
+                <case>
+                    <collectAndSetAttrByRegex src="$_body">
+                        <regex><![CDATA[Dynamic Filter monitored greylisted\s+<_proto:gPatStr>\s+traffic\s+from\s+<srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<srcIpPort:gPatIpPort>\s+\(<_postNATSrc:gPatStr>/<postNATSrcIpPort:gPatIpPort>\)\s+to\s+<destIntfName:gPatStrEndColon>:<_destStr:gPatStr>/<destIpPort:gPatIpPort>\s+\(<_preNATDest:gPatStr>/<preNATDestIpPort:gPatIpPort>\),\s+destination\s+<:gPatIpAddr>\s+resolved from dynamic list:\s+<destDomain:patStrEndComma>,\s+threat-level:\s+<threatLevel:gPatStr>,\s+category:\s+<threatCategory:gPatStr>]]></regex>
+                    </collectAndSetAttrByRegex>
+                </case>
+            </switch>
+        </when>
+        <when test="$eventType = 'ASA-338203'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Dynamic\s+filter\s+dropped\s+greylisted\s+<_proto:gPatStr>\s+traffic\s+from\s+<srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<srcIpPort:gPatIpPort>\s+\(<_postNATSrc:gPatStr>/<postNATSrcIpPort:gPatIpPort>\)\s+to\s+<destIntfName:gPatStrEndColon>:<_destStr:gPatStr>/<destIpPort:gPatIpPort>\s+\(<_preNATDest:gPatStr>/<preNATDestIpPort:gPatIpPort>\),\s+source malicious address resolved from local or dynamic list:\s+<destDomain:patStrEndComma>,\s+threat-level:\s+<threatLevel:gPatStr>,\s+category:\s+<threatCategory:gPatStr>.*]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-338204'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Dynamic\s+filter\s+dropped\s+greylisted\s+<_proto:gPatStr>\s+traffic\s+from\s+<srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<srcIpPort:gPatIpPort>\s+\(<_postNATSrc:gPatStr>/<postNATSrcIpPort:gPatIpPort>\)\s+to\s+<destIntfName:gPatStrEndColon>:<_destStr:gPatStr>/<destIpPort:gPatIpPort>\s+\(<_preNATDest:gPatStr>/<preNATDestIpPort:gPatIpPort>\),\s+destination malicious address resolved from local or dynamic list:\s+<destDomain:patStrEndComma>,\s+threat-level:\s+<threatLevel:gPatStr>,\s+category:\s+<threatCategory:gPatStr>.*]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-338301'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Intercepted DNS reply for name <destDomain:gPatStr> from <destIntfName:gPatStr>:<_destStr:gPatStr>/<destIpPort:gPatInt>\s+to\s+<srcIntfName:patStrEndColon>:<_srcStr:gPatStr>/<srcIpPort:gPatInt>,.*]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-338302'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Address <_destStr:gPatStr> discovered for domain <destDomain:gPatStr> from greylist.*]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-338303'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Address <_destStr:gPatStr>\s+\(<destDomain:gPatStr>\)\s+timed out.*]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-338304'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Successfully downloaded dynamic filter data file from updater server https://<destDomain:gPatStr>\s+.*]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-338305'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Failed to download dynamic filter data file from updater server https://<destDomain:gPatStr>\s+.*]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-338310'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Failed to update from dynamic filter updater server <intoURL:patStrEndComma>, reason: <errReason:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType IN 'ASA-714003, ASA-713236'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[IP\s+=\s+<_srcStr:gPatStr>,<:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType IN 'ASA-713034, ASA-715046, ASA-713066, ASA-715027, ASA-715059, ASA-713906, ASA-713025, ASA-715047, ASA-713221, ASA-713222, ASA-715001, ASA-714011'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Group\s+=\s+<userGrp:patStrEndComma>,\s+Username\s+=\s+<user:patStrEndComma>,\s+IP\s+=\s+<_srcStr:gPatStr>,<:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-713903'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[IKE Receiver: Runt ISAKMP packet discarded on Port <ipPort:gPatInt> from <_srcStr:gPatStr>:<srcIpPort:gPatInt>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-713049'">
+            <switch>
+                <case>
+                    <collectAndSetAttrByRegex src="$_body">
+                        <regex><![CDATA[Group\s+=\s+<userGrp:patStrEndComma>,\s+Username\s+=\s+<user:patStrEndComma>,\s+IP\s+=\s+<_srcStr:gPatStr>,<:gPatMesgBody>]]></regex>
+                    </collectAndSetAttrByRegex>
+                    <setEventAttribute attr="eventType">"ASA-713049-Client-VPN-Logon-success"</setEventAttribute>
+                </case>
+                <case>
+                    <collectAndSetAttrByRegex src="$_body">
+                        <regex><![CDATA[Group\s+=\s+<userGrp:patStrEndComma>,\s+IP\s+=\s+<_srcStr:gPatStr>,<:gPatMesgBody>]]></regex>
+                    </collectAndSetAttrByRegex>
+                    <setEventAttribute attr="eventType">"ASA-713049-SiteToSite-VPN-Logon-success"</setEventAttribute>
+                </case>
+            </switch>
+        </when>
+        <when test="$eventType = 'ASA-713050'">
+            <switch>
+                <case>
+                    <collectAndSetAttrByRegex src="$_body">
+                        <regex><![CDATA[Group\s+=\s+<userGrp:patStrEndComma>,\s+Username\s+=\s+<user:patStrEndComma>,\s+IP\s+=\s+<_srcStr:gPatIpAddr>,<:gPatMesgBody>]]></regex>
+                    </collectAndSetAttrByRegex>
+                </case>
+                <default/>
+            </switch>
+        </when>
+        <when test="$eventType = 'ASA-713052'">
+            <switch>
+                <case>
+                    <collectAndSetAttrByRegex src="$_body">
+                        <regex><![CDATA[Group\s+=\s+<userGrp:patStrEndComma>,\s+Username\s+=\s+<user:patStrEndComma>,\s+IP\s+=\s+<_srcStr:gPatIpAddr>,<:gPatMesgBody>]]></regex>
+                    </collectAndSetAttrByRegex>
+                </case>
+                <default/>
+            </switch>
+        </when>
+        <when test="$eventType = 'ASA-419001'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Dropping TCP SYN from\s+<srcIntfName:gPatStrEndColon>:<_srcStr:gPatStr>/<_sport:gPatStr>\s+to\s+<destIntfName:gPatStrEndColon>:<_destStr:gPatStr>/<_dport:gPatStr><:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-419002'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Duplicate\s+TCP SYN from\s+<srcIntfName:gPatStrEndColon>:<_srcStr:gPatStr>/<_sport:gPatStr>\s+to\s+<destIntfName:gPatStrEndColon>:<_destStr:gPatStr>/<_dport:gPatStr><:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-419003'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[Cleared TCP urgent flag from\s+<srcIntfName:gPatStrEndColon>:<_srcStr:gPatStr>/<_sport:gPatStr>\s+to\s+<destIntfName:gPatStrEndColon>:<_destStr:gPatStr>/<_dport:gPatStr><:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType IN 'ASA-420002, ASA-420003'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[IPS requested to <_action:gPatStr> TCP <:gPatStr> from inside:<_srcStr:gPatStr>/<srcIpPort:gPatInt> to outside:<_destStr:gPatStr>/<destIpPort:gPatInt>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-434001'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[^SFR card not up and fail-close mode used, dropping <_proto:gPatWord> packet from <:gPatStrEndColon>:<_srcStr:gPatStr>/<srcIpPort:gPatInt> to <:gPatStrEndColon>:<_destStr:gPatStr>/<destIpPort:gPatInt>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType IN 'ASA-434002, ASA-434003'">
+            <!-- <164>%ASA-4-434002: SFR requested to drop TCP packet from inside:10.1.1.1/58225 to outside:1.1.1.1/443 -->
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[^SFR requested to <:gPatStr><_proto:gPatWord> packet from <:gPatStrEndColon>:<_srcStr:gPatStr>/<srcIpPort:gPatInt> to <:gPatStrEndColon>:<_destStr:gPatStr>/<destIpPort:gPatInt>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-434004'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[^SFR requested ASA to bypass further packet redirection and process flow from <:gPatStrEndColon>:<_srcStr:gPatStr>/<srcIpPort:gPatInt> to <:gPatStrEndColon>:<_destStr:gPatStr>/<destIpPort:gPatInt> locally]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-434007'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[^SFR redirect will override Scansafe redirect for flow from <:gPatStrEndColon>:<_srcStr:gPatStr>/<srcIpPort:gPatInt> to <:gPatStrEndColon>:<_destStr:gPatStr>/<destIpPort:gPatInt>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType IN 'ASA-602304, ASA-602303'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[<:gPatStrEndColon>:\s+An <intfName:gPatStr> remote access SA \(<:patStrRightParen>\) between <:gPatIpAddr> and <_srcStr:gPatIpAddr> \(user=<user:patStrRightParen>\)<:gPatMesgBody>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+        <when test="$eventType = 'ASA-733102'">
+            <collectAndSetAttrByRegex src="$_body">
+                <regex><![CDATA[^Threat-detection adds host <srcIpAddr:gPatIpAddr>]]></regex>
+            </collectAndSetAttrByRegex>
+        </when>
+    </choose>
+    <when test="exist _srcStr">
+        <switch>
+            <case>
+                <collectFieldsByRegex src="$_srcStr">
+                    <regex><![CDATA[<srcIpAddr:gPatIpAddr>(?:\(<user:gPatStr>\))?]]></regex>
+                </collectFieldsByRegex>
+            </case>
+            <default>
+                <setEventAttribute attr="srcName">$_srcStr</setEventAttribute>
+            </default>
+        </switch>
+    </when>
+    <when test="exist _destStr">
+        <switch>
+            <case>
+                <collectFieldsByRegex src="$_destStr">
+                    <regex><![CDATA[<destIpAddr:gPatIpAddr>]]></regex>
+                </collectFieldsByRegex>
+            </case>
+            <default>
+                <setEventAttribute attr="destName">$_destStr</setEventAttribute>
+            </default>
+        </switch>
+    </when>
+    <when test="not_private_ip destIpAddr">
+        <when test="exist destName">
+            <setEventAttribute attr="domainEntropy">calcDomainEntropy($destName)</setEventAttribute>
+        </when>
+    </when>
+    <when test="exist _proto">
+        <setEventAttribute attr="ipProto">convertStrToIntIpProto($_proto)</setEventAttribute>
+    </when>
+    <when test="exist _dport">
+        <setEventAttribute attr="destIpPort">convertStrToIntIpPort($_dport)</setEventAttribute>
+    </when>
+    <when test="exist _sport">
+        <setEventAttribute attr="srcIpPort">convertStrToIntIpPort($_sport)</setEventAttribute>
+    </when>
+    <when test="exist _postNATSrc">
+        <switch>
+            <case>
+                <collectFieldsByRegex src="$_postNATSrc">
+                    <regex><![CDATA[^<postNATSrcIpAddr:gPatIpAddr>$]]></regex>
+                </collectFieldsByRegex>
+            </case>
+            <default/>
+        </switch>
+    </when>
+    <when test="exist _preNATDest">
+        <switch>
+            <case>
+                <collectFieldsByRegex src="$_preNATDest">
+                    <regex><![CDATA[^<preNATDestIpAddr:gPatIpAddr>$]]></regex>
+                </collectFieldsByRegex>
+            </case>
+            <default/>
+        </switch>
+    </when>
+    <when test="exist user">
+        <switch>
+            <case>
+                <collectFieldsByRegex src="$user">
+                    <regex><![CDATA[<domain:gPatStr>[\\]<user:gPatStr>]]></regex>
+                </collectFieldsByRegex>
+            </case>
+            <default/>
+        </switch>
+    </when>
+    <!--
+<when test='exist _saddr'>
+<setEventAttribute attr="srcIpAddr">convertHostNameToIp($_saddr)</setEventAttribute>
+</when>
+<when test='exist _daddr'>
+<setEventAttribute attr="destIpAddr">convertHostNameToIp($_daddr)</setEventAttribute>
+</when>
+-->
+    <when test="$_idNum IN '106001, 106023, 302013, 302014, 302015, 302016, 302017, 302018, 302020, 302021'">
+        <setEventAttribute attr="phEventCategory">4</setEventAttribute>
+    </when>
+    <when test="$eventType = 'ASA-713228'">
+        <when test="exist srcIpAddr">
+            <when test="not_exist postNATSrcIpAddr">
+                <setEventAttribute attr="postNATSrcIpAddr">srcIpAddr</setEventAttribute>
+            </when>
+        </when>
+    </when>
+</parsingInstructions>
