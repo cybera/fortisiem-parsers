@@ -708,10 +708,20 @@ Dec 05 2008 13:02:16: %ASA-4-106023: Deny icmp src outside:192.168.0.1 dst wdmz:
         <when test="$eventType = 'ASA-722051'">
             <!--
 <164>May 08 2013 12:38:06: %ASA-4-722051: Group <SBL> User <potts.amber> IP <10.1.1.1> Address <10.200.20.201> assigned to session
+<164>Aug 12 2019 13:32:45 vpn : %ASA-4-722051: Group <SBL> User <potts.amber> IP <10.1.1.1> IPv4 Address <172.16.1.10> IPv6 address <2605::20> assigned to session
 -->
-            <collectAndSetAttrByRegex src="$_body">
-                <regex><![CDATA[Group \<<policyName:patStrRightAngle>\> User \<<user:patStrRightAngle>\> IP \<<remoteVpnIpAddr:gPatIpAddr>\> Address \<<localVpnIpAddr:gPatIpAddr>\>]]></regex>
-            </collectAndSetAttrByRegex>
+            <switch>
+                <case>
+                    <collectAndSetAttrByRegex src="$_body">
+                        <regex><![CDATA[Group \<<policyName:patStrRightAngle>\> User \<<user:patStrRightAngle>\> IP \<<remoteVpnIpAddr:gPatIpAddr>\> Address \<<localVpnIpAddr:gPatIpAddr>\>]]></regex>
+                    </collectAndSetAttrByRegex>
+                </case>
+                <case>
+                    <collectAndSetAttrByRegex src="$_body">
+                        <regex><![CDATA[Group \<<policyName:patStrRightAngle>\> User \<<user:patStrRightAngle>\> IP \<<remoteVpnIpAddr:gPatIpAddr>\> IPv4 [Aa]ddress \<<localVpnIpAddr:gPatIpAddr>\> IPv6 [Aa]ddress]]></regex>
+                    </collectAndSetAttrByRegex>
+                </case>
+            </switch>
             <setEventAttribute attr="userGrp">$policyName</setEventAttribute>
         </when>
         <when test="$eventType = 'ASA-713228'">
