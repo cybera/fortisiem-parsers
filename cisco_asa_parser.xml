@@ -718,7 +718,7 @@ Dec 05 2008 13:02:16: %ASA-4-106023: Deny icmp src outside:192.168.0.1 dst wdmz:
                 </case>
                 <case>
                     <collectAndSetAttrByRegex src="$_body">
-                        <regex><![CDATA[Group \<<policyName:patStrRightAngle>\> User \<<user:patStrRightAngle>\> IP \<<remoteVpnIpAddr:gPatIpAddr>\> IPv4 [Aa]ddress \<<localVpnIpAddr:gPatIpAddr>\> IPv6 [Aa]ddress]]></regex>
+                        <regex><![CDATA[Group \<<policyName:patStrRightAngle>\> User \<<user:patStrRightAngle>\> IP \<<remoteVpnIpAddr:gPatIpAddr>\> IPv4 [Aa]ddress \<<localVpnIpAddr:gPatIpAddr>\> IPv6 [Aa]ddress \<<localVpnIp6Addr:gPatIpAddr>\>]]></regex>
                     </collectAndSetAttrByRegex>
                 </case>
             </switch>
