@@ -1,0 +1,62 @@
+<eventFormatRecognizer><![CDATA[SNMPv2-MIB::snmpTrapOID.0 = OID: SNMPv2-SMI::enterprises.9.9.599]]></eventFormatRecognizer>
+<parsingInstructions>
+    <!-- sample
+2010-11-01 12:59:57 0.0.0.0(via UDP: [172.22.2.25]:32769) TRAP2, SNMP v2c, community 1n3t3ng . Cold Start Trap (0) Uptime: 0:00:00.00 DISMAN-EVENT-MIB::sysUpTimeInstance = Timeticks: (9165100) 1 day, 1:27:31.00 SNMPv2-MIB::snmpTrapOID.0 = OID:
+SNMPv2-SMI::enterprises.9.9.599.0.4 SNMPv2-SMI::enterprises.9.9.599.1.3.1.1.1.0 = Hex-STRING: 00 24 D7 36 A0 00 SNMPv2-SMI::enterprises.9.9.513.1.1.1.1.5.0 = STRING: "AP-2" SNMPv2-SMI::enterprises.9.9.599.1.3.1.1.8.0 = Hex-STRING: 00 25 45 B7 66 70
+SNMPv2-SMI::enterprises.9.9.513.1.2.1.1.1.0 = INTEGER: 0 SNMPv2-SMI::enterprises.9.9.599.1.3.1.1.10.0 = IpAddress: 172.22.4.54 SNMPv2-SMI::enterprises.9.9.599.1.2.1.0 = STRING: "IE\brouse" SNMPv2-SMI::enterprises.9.9.599.1.2.2.0 = STRING: "IE"
+-->
+    <switch>
+        <case>
+            <collectFieldsByRegex src="$_rawmsg">
+                <regex><![CDATA[<_year:gPatYear>-<_mon:gPatMonNum>-<_day:gPatDay>\s+<_time:gPatTime>\s+<:gPatIpAddr><_body:gPatMesgBody>]]></regex>
+            </collectFieldsByRegex>
+        </case>
+        <case>
+            <collectFieldsByRegex src="$_rawmsg">
+                <regex><![CDATA[<_year:gPatYear>-<_mon:gPatMonNum>-<_day:gPatDay>\s+<_time:gPatTime>\s+<hostName:gPatStr><:gPatStr><_body:gPatMesgBody>]]></regex>
+            </collectFieldsByRegex>
+        </case>
+    </switch>
+    <setEventAttribute attr="deviceTime">toDateTime($_mon, $_day, $_year, $_time)</setEventAttribute>
+    <setEventAttribute attr="eventType">Cisco-WLC2-Generic</setEventAttribute>
+    <setEventAttribute attr="eventSeverity">1</setEventAttribute>
+    <setEventAttribute attr="extEventRecvProto">Snmp Trap</setEventAttribute>
+    <collectAndSetAttrByKeyValuePair sep="\t" src="$_body">
+        <attrKeyMap attr="_eventType" key="SNMPv2-MIB::snmpTrapOID.0 = OID: SNMPv2-SMI::enterprises.9.9.599.0."/>
+        <attrKeyMap attr="_hostMACAddr" key="SNMPv2-SMI::enterprises.9.9.599.1.3.1.1.1.0 = Hex-STRING: "/>
+        <attrKeyMap attr="_nepMACAddr" key="SNMPv2-SMI::enterprises.9.9.599.1.3.1.1.8.0 = Hex-STRING: "/>
+        <attrKeyMap attr="hostIpAddr" key="SNMPv2-SMI::enterprises.9.9.599.1.3.1.1.10.0 = IpAddress: "/>
+        <attrKeyMap attr="nepDevName" key="SNMPv2-SMI::enterprises.9.9.513.1.1.1.1.5.0 = STRING: "/>
+    </collectAndSetAttrByKeyValuePair>
+    <choose>
+        <when test="$_eventType = '1'">
+            <setEventAttribute attr="eventType">Cisco-WLC-1-clientKeyDecryptError</setEventAttribute>
+            <collectAndSetAttrByKeyValuePair sep="\t" src="$_body">
+                <attrKeyMap attr="_moduleType" key="SNMPv2-SMI::enterprises.9.9.599.1.3.1.1.7.0 = INTEGER: "/>
+                <attrKeyMap attr="_intfType" key="SNMPv2-SMI::enterprises.9.9.599.1.3.1.1.9.0 = Hex-STRING: "/>
+            </collectAndSetAttrByKeyValuePair>
+        </when>
+    </choose>
+    <choose>
+        <!-- maybe obsolete by Cisco already -->
+        <when test="$_eventType = '4'">
+            <setEventAttribute attr="eventType">Cisco-WLC-4-HOST_LOCATION</setEventAttribute>
+            <collectAndSetAttrByKeyValuePair sep="\t" src="$_body">
+                <attrKeyMap attr="_srcMACAddr" key="SNMPv2-SMI::enterprises.14179.2.6.2.35.0 = Hex-STRING: "/>
+                <attrKeyMap attr="_destMACAddr" key="SNMPv2-SMI::enterprises.14179.2.6.2.34.0 = Hex-STRING: "/>
+            </collectAndSetAttrByKeyValuePair>
+        </when>
+    </choose>
+    <when test="exist _srcMACAddr">
+        <setEventAttribute attr="srcMACAddr">normalizeMAC($_srcMACAddr)</setEventAttribute>
+    </when>
+    <when test="exist _destMACAddr">
+        <setEventAttribute attr="destMACAddr">normalizeMAC($_destMACAddr)</setEventAttribute>
+    </when>
+    <when test="exist _nepMACAddr">
+        <setEventAttribute attr="nepMACAddr">normalizeMAC($_nepMACAddr)</setEventAttribute>
+    </when>
+    <when test="exist _hostMACAddr">
+        <setEventAttribute attr="hostMACAddr">normalizeMAC($_hostMACAddr)</setEventAttribute>
+    </when>
+</parsingInstructions>
