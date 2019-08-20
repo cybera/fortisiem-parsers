@@ -42,8 +42,10 @@ SNMPv2-SMI::enterprises.9.9.513.1.2.1.1.1.0 = INTEGER: 0 SNMPv2-SMI::enterprises
         <when test="$_eventType = '4'">
             <setEventAttribute attr="eventType">Cisco-WLC-4-HOST_LOCATION</setEventAttribute>
             <collectAndSetAttrByKeyValuePair sep="\t" src="$_body">
-                <attrKeyMap attr="_srcMACAddr" key="SNMPv2-SMI::enterprises.14179.2.6.2.35.0 = Hex-STRING: "/>
-                <attrKeyMap attr="_destMACAddr" key="SNMPv2-SMI::enterprises.14179.2.6.2.34.0 = Hex-STRING: "/>
+                <attrKeyMap attr="user" key="SNMPv2-SMI::enterprises.9.9.599.1.3.1.1.27.0 = STRING: "/>
+                <attrKeyMap attr="wlanSsid" key="SNMPv2-SMI::enterprises.9.9.599.1.3.1.1.28.0 = STRING: "/>
+                <attrKeyMap attr="srcIpAddr" key="SNMPv2-SMI::enterprises.9.9.599.1.3.1.1.10.0 = STRING: "/>
+                <attrKeyMap attr="_hostMACAddr" key="SNMPv2-SMI::enterprises.9.9.599.1.3.1.1.8.0 = Hex-STRING: "/>
             </collectAndSetAttrByKeyValuePair>
         </when>
     </choose>
