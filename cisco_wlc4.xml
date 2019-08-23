@@ -50,6 +50,15 @@
                 <when test="$_eventType = '11'">
                     <setEventAttribute attr="eventType">Cisco-WLC-11-ApIfDownNotify</setEventAttribute>
                 </when>
+                <when test="$_eventType = '19'">
+                    <setEventAttribute attr="eventType">Cisco-WLC-19-ciscoLwappApRogueDetected</setEventAttribute>
+                    <collectAndSetAttrByKeyValuePair sep="\t" src="$_body">
+                        <attrKeyMap attr="wlanSsid" key="SNMPv2-SMI::enterprises.9.9.513.3.4.0 = STRING: "/>
+                        <attrKeyMap attr="wlanChannelId" key="SNMPv2-SMI::enterprises.9.9.513.3.13.0 = STRING: "/>
+                        <attrKeyMap attr="_hostMACAddr" key="SNMPv2-SMI::enterprises.9.9.513.1.1.1.1.1.0 = Hex-STRING: "/>
+                        <attrKeyMap attr="_srcMACAddr" key="SNMPv2-SMI::enterprises.9.9.513.3.2.0 = Hex-STRING: "/>
+                    </collectAndSetAttrByKeyValuePair>
+                </when>
             </choose>
             <when test="exist _nepMACAddr">
                 <setEventAttribute attr="nepMACAddr">normalizeMAC($_nepMACAddr)</setEventAttribute>
@@ -93,5 +102,8 @@
     </choose>
     <when test="exist _hostMACAddr">
         <setEventAttribute attr="hostMACAddr">normalizeMAC($_hostMACAddr)</setEventAttribute>
+    </when>
+    <when test="exist _srcMACAddr">
+        <setEventAttribute attr="srcMACAddr">normalizeMAC($_srcMACAddr)</setEventAttribute>
     </when>
 </parsingInstructions>
