@@ -1,0 +1,97 @@
+<eventFormatRecognizer><![CDATA[\tSNMPv2-MIB::snmpTrapOID\.0 = OID: SNMPv2-SMI::enterprises\.9\.9\.(?:513|515|598)\.]]></eventFormatRecognizer>
+<parsingInstructions>
+    <collectFieldsByRegex src="$_rawmsg">
+        <regex><![CDATA[<_year:gPatYear>-<_mon:gPatMonNum>-<_day:gPatDay>\s+<_time:gPatTime>\s+.*SNMPv2-MIB::snmpTrapOID\.0 = OID: SNMPv2-SMI::enterprises\.9\.9\.<_oid:gPatInt>\.0.<_eventType:gPatInt>\t<_body:gPatMesgBody>]]></regex>
+    </collectFieldsByRegex>
+    <setEventAttribute attr="deviceTime">toDateTime($_mon, $_day, $_year, $_time)</setEventAttribute>
+    <setEventAttribute attr="eventType">Cisco-WLC-Generic</setEventAttribute>
+    <setEventAttribute attr="extEventRecvProto">Snmp Trap</setEventAttribute>
+    <choose>
+        <when test="$_oid = '513'">
+            <collectAndSetAttrByKeyValuePair sep="\t" src="$_body">
+                <attrKeyMap attr="_hostMACAddr" key="SNMPv2-SMI::enterprises.9.9.513.1.1.1.1.1.0 = Hex-STRING: "/>
+                <attrKeyMap attr="_nepMACAddr" key="SNMPv2-SMI::enterprises.9.9.513.3.2.0 = Hex-STRING: "/>
+                <attrKeyMap attr="wlanSsid" key="SNMPv2-SMI::enterprises.9.9.513.3.4.0 = STRING: "/>
+            </collectAndSetAttrByKeyValuePair>
+            <choose>
+                <when test="$_eventType = '1'">
+                    <setEventAttribute attr="eventType">Cisco-WLC-1-ApIfRegulatoryDomainMismatchNotif</setEventAttribute>
+                </when>
+                <when test="$_eventType = '2'">
+                    <setEventAttribute attr="eventType">Cisco-WLC-2-ApCrash</setEventAttribute>
+                </when>
+                <when test="$_eventType = '3'">
+                    <setEventAttribute attr="eventType">Cisco-WLC-3-ApUnsupported</setEventAttribute>
+                </when>
+                <when test="$_eventType = '4'">
+                    <setEventAttribute attr="eventType">Cisco-WLC-4-ApAssociated</setEventAttribute>
+                    <collectAndSetAttrByRegex src="$_body">
+                        <regex><![CDATA[SNMPv2-SMI::enterprises\.9\.9\.513\.1\.1\.1\.1\.5\.[\d.]+ = STRING: "<nepDevName:gPatMesgBodyMin>"]]></regex>
+                    </collectAndSetAttrByRegex>
+                </when>
+                <when test="$_eventType = '5'">
+                    <setEventAttribute attr="eventType">Cisco-WLC-5-ApPower</setEventAttribute>
+                </when>
+                <when test="$_eventType = '6'">
+                    <setEventAttribute attr="eventType">Cisco-WLC-6-ApRogueApDetected</setEventAttribute>
+                </when>
+                <when test="$_eventType = '7'">
+                    <setEventAttribute attr="eventType">Cisco-WLC-7-ApRogueApCleared</setEventAttribute>
+                </when>
+                <when test="$_eventType = '8'">
+                    <setEventAttribute attr="eventType">Cisco-WLC-8-ApWipsNotification</setEventAttribute>
+                </when>
+                <when test="$_eventType = '9'">
+                    <setEventAttribute attr="eventType">Cisco-WLC-9-ApNoDownlinkChannelNotify</setEventAttribute>
+                </when>
+                <when test="$_eventType = '10'">
+                    <setEventAttribute attr="eventType">Cisco-WLC-10-ApIfUpNotify</setEventAttribute>
+                </when>
+                <when test="$_eventType = '11'">
+                    <setEventAttribute attr="eventType">Cisco-WLC-11-ApIfDownNotify</setEventAttribute>
+                </when>
+            </choose>
+            <when test="exist _nepMACAddr">
+                <setEventAttribute attr="nepMACAddr">normalizeMAC($_nepMACAddr)</setEventAttribute>
+            </when>
+        </when>
+        <when test="$_oid = '515'">
+            <collectAndSetAttrByKeyValuePair sep="\t" src="$_body">
+                <attrKeyMap attr="user" key="SNMPv2-SMI::enterprises.9.9.515.1.1.0 = STRING: "/>
+            </collectAndSetAttrByKeyValuePair>
+            <when test="$_eventType = '1'">
+                <setEventAttribute attr="eventType">Cisco-WLC-1-GuestUserRemoved</setEventAttribute>
+            </when>
+        </when>
+        <when test="$_oid = '598'">
+            <collectAndSetAttrByKeyValuePair sep="\t" src="$_body">
+                <attrKeyMap attr="serverIpAddr" key="SNMPv2-SMI::enterprises.9.9.598.1.2.1.1.3.183 = STRING: "/>
+                <attrKeyMap attr="_hostMACAddr" key="SNMPv2-SMI::enterprises.9.9.598.1.2.1.1.6.183 = Hex-STRING: "/>
+                <attrKeyMap attr="user" key="SNMPv2-SMI::enterprises.9.9.598.1.2.1.1.7.183 = STRING: "/>
+            </collectAndSetAttrByKeyValuePair>
+            <choose>
+                <when test="$_eventType = '1'">
+                    <setEventAttribute attr="eventType">Cisco-WLC-1-ApIfRegulatoryDomainMismatchNotif</setEventAttribute>
+                </when>
+                <when test="$_eventType = '2'">
+                    <setEventAttribute attr="eventType">Cisco-WLC-2-ServerGlobalActivated</setEventAttribute>
+                </when>
+                <when test="$_eventType = '3'">
+                    <setEventAttribute attr="eventType">Cisco-WLC-3-ServerGlobalDeactivated</setEventAttribute>
+                </when>
+                <when test="$_eventType = '4'">
+                    <setEventAttribute attr="eventType">Cisco-WLC-4-ServerWlanActivated</setEventAttribute>
+                </when>
+                <when test="$_eventType = '5'">
+                    <setEventAttribute attr="eventType">Cisco-WLC-5-ServerWlanDeactivated</setEventAttribute>
+                </when>
+                <when test="$_eventType = '6'">
+                    <setEventAttribute attr="eventType">Cisco-WLC-6-ReqTimedOut</setEventAttribute>
+                </when>
+            </choose>
+        </when>
+    </choose>
+    <when test="exist _hostMACAddr">
+        <setEventAttribute attr="hostMACAddr">normalizeMAC($_hostMACAddr)</setEventAttribute>
+    </when>
+</parsingInstructions>
