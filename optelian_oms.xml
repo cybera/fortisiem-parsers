@@ -1,0 +1,25 @@
+<!--sample
+cardPowerA:
+2019-12-30 11:35:26 0.0.0.0INFORM, SNMP v2c, community public . Cold Start Trap (0) Uptime: 0:00:00.00 DISMAN-EVENT-MIB::sysUpTimeInstance = Timeticks: (2374914173) 274 days, 20:59:01.73 SNMPv2-MIB::snmpTrapOID.0 = OID: SNMPv2-SMI::enterprises.24022.7.7.2.4
+cardPowerB:
+2019-12-30 11:35:26 0.0.0.0INFORM, SNMP v2c, community public . Cold Start Trap (0) Uptime: 0:00:00.00 DISMAN-EVENT-MIB::sysUpTimeInstance = Timeticks: (2374914173) 274 days, 20:59:01.73 SNMPv2-MIB::snmpTrapOID.0 = OID: SNMPv2-SMI::enterprises.24022.7.7.2.5
+-->
+<eventFormatRecognizer><![CDATA[\sSNMPv2-MIB::snmpTrapOID\.0 = OID: SNMPv2-SMI::enterprises\.24022\.]]></eventFormatRecognizer>
+<parsingInstructions>
+    <collectFieldsByRegex src="$_rawmsg">
+        <regex><![CDATA[<_year:gPatYear>-<_mon:gPatMonNum>-<_day:gPatDay>\s+<_time:gPatTime>\s+.*SNMPv2-MIB::snmpTrapOID\.0 = OID: SNMPv2-SMI::enterprises\.24022\.7\.7\.2\.<_eventType:gPatInt>\s<_body:gPatMesgBody>]]></regex>
+    </collectFieldsByRegex>
+    <setEventAttribute attr="deviceTime">toDateTime($_mon, $_day, $_year, $_time)</setEventAttribute>
+    <setEventAttribute attr="eventType">Optelian-DWDM-Generic</setEventAttribute>
+    <setEventAttribute attr="extEventRecvProto">Snmp Trap</setEventAttribute>
+    <choose>
+        <when test="$_eventType = '4'">
+            <!-- cardPowerA .1.3.6.1.4.1.24022.7.7.2.4 -->
+            <setEventAttribute attr="eventType">Optelian-OMS-cardPowerA-Failure</setEventAttribute>
+        </when>
+        <when test="$_eventType = '5'">
+            <!-- cardPowerB .1.3.6.1.4.1.24022.7.7.2.5 -->
+            <setEventAttribute attr="eventType">Optelian-OMS-cardPowerB-Failure</setEventAttribute>
+        </when>
+    </choose>
+</parsingInstructions>
