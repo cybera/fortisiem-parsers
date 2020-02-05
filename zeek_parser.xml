@@ -2,13 +2,13 @@
     <pattern name="patStrEndColon"><![CDATA[[^:]*]]></pattern>
     <pattern name="patStrDoubleQuoted"><![CDATA[[^"]*]]></pattern>
 </patternDefinitions>
-<eventFormatRecognizer><![CDATA[<_pri:gPatSyslogPRI><_mon:gPatMon>\s+<_day:gPatDay>\s+<_time:gPatTime>.*bro_<_mod:gPatWord>:\s+<_body:gPatMesgBody>]]></eventFormatRecognizer>
+<eventFormatRecognizer><![CDATA[<_pri:gPatSyslogPRI><_mon:gPatMon>\s+<_day:gPatDay>\s+<_time:gPatTime>.*zeek_<_mod:gPatWord>\s+<_body:gPatMesgBody>]]></eventFormatRecognizer>
 <parsingInstructions>
     <!-- parsing common fields -->
     <collectFieldsByRegex src="$_rawmsg">
-        <regex><![CDATA[<_pri:gPatSyslogPRI><_mon:gPatMon>\s+<_day:gPatDay>\s+<_time:gPatTime>.*bro_<_mod:gPatWord>:\s+<_body:gPatMesgBody>]]></regex>
+        <regex><![CDATA[<_pri:gPatSyslogPRI><_mon:gPatMon>\s+<_day:gPatDay>\s+<_time:gPatTime>.*zeek_<_mod:gPatWord>\s+<_body:gPatMesgBody>]]></regex>
     </collectFieldsByRegex>
-    <setEventAttribute attr="eventType">combineMsgId("Bro-",$_mod)</setEventAttribute>
+    <setEventAttribute attr="eventType">combineMsgId("Zeek-",$_mod)</setEventAttribute>
     <when test="$_mod = 'dhcp'">
         <collectAndSetAttrByJSON src="$_body">
             <attrKeyMap attr="_eventTime" key="ts"/>
@@ -58,6 +58,7 @@
             <attrKeyMap attr="srcIpPort" key="id.orig_p"/>
             <attrKeyMap attr="destIpAddr" key="id.resp_h"/>
             <attrKeyMap attr="destIpPort" key="id.resp_p"/>
+            <attrKeyMap attr="tcpFlags" key="history"/>
             <attrKeyMap attr="_proto" key="proto"/>
             <attrKeyMap attr="duration" key="duration"/>
             <attrKeyMap attr="recvBytes64" key="orig_bytes"/>
@@ -83,6 +84,24 @@
             <attrKeyMap attr="distinctSrcIpAddr" key="uniq_hosts"/>
             <attrKeyMap attr="totHits" key="hits"/>
             <attrKeyMap attr="totBytes" key="bytes"/>
+        </collectAndSetAttrByJSON>
+    </when>
+    <when test="$_mod = 'notice'">
+        <collectAndSetAttrByJSON src="$_body">
+            <attrKeyMap attr="_eventTime" key="ts"/>
+            <attrKeyMap attr="ipConnId" key="uid"/>
+            <attrKeyMap attr="fileUID" key="fuid"/>
+            <attrKeyMap attr="srcIpAddr" key="id.orig_h"/>
+            <attrKeyMap attr="srcIpPort" key="id.orig_p"/>
+            <attrKeyMap attr="destIpAddr" key="id.resp_h"/>
+            <attrKeyMap attr="destIpPort" key="id.resp_p"/>
+            <attrKeyMap attr="_proto" key="proto"/>
+            <attrKeyMap attr="note" key="note"/>
+            <attrKeyMap attr="msg" key="msg"/>
+            <attrKeyMap attr="subMsg" key="sub"/>
+            <attrKeyMap attr="peerDescr" key="peer_descr"/>
+            <attrKeyMap attr="_actions" key="actions"/>
+            <attrKeyMap attr="_suppressFor" key="suppress_for"/>
         </collectAndSetAttrByJSON>
     </when>
     <when test="$_mod = 'radius'">
@@ -158,7 +177,9 @@
                 <regex><![CDATA[<cacheTTL:gPatInt>]]></regex>
             </collectFieldsByRegex>
         </when>
-        <setEventAttribute attr="eventType">combineMsgId("Bro-",$_mod,"-", $dnsQueryType, "-Query-", $_result)</setEventAttribute>
+        <when test="exist dnsQueryType">
+            <setEventAttribute attr="eventType">combineMsgId("Zeek-",$_mod,"-", $dnsQueryType, "-Query-", $_result)</setEventAttribute>
+        </when>
     </when>
     <when test="$_mod = 'http'">
         <collectAndSetAttrByJSON src="$_body">
