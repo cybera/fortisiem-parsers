@@ -61,15 +61,18 @@
             <attrKeyMap attr="tcpFlags" key="history"/>
             <attrKeyMap attr="_proto" key="proto"/>
             <attrKeyMap attr="duration" key="duration"/>
-            <attrKeyMap attr="recvBytes64" key="orig_bytes"/>
-            <attrKeyMap attr="sentBytes64" key="resp_bytes"/>
             <attrKeyMap attr="status" key="conn_state"/>
+            <attrKeyMap attr="localOrig" key="local_orig"/>
             <attrKeyMap attr="duration" key="local_orig"/>
-            <attrKeyMap attr="_missed_bytes" key="missed_bytes"/>
+            <attrKeyMap attr="missedBytes" key="missed_bytes"/>
             <attrKeyMap attr="tcpFlags" key="history"/>
-            <attrKeyMap attr="recvPkts" key="orig_pkts"/>
+            <!-- orig_*: Sent by originator (i.e. sent) -->
+            <!-- resp_*: Sent by responder (i.e. recv) -->
+            <attrKeyMap attr="sentBytes64" key="orig_bytes"/>
+            <attrKeyMap attr="sentPkts" key="orig_pkts"/>
+            <attrKeyMap attr="recvBytes64" key="resp_bytes"/>
+            <attrKeyMap attr="recvPkts" key="resp_pkts"/>
             <attrKeyMap attr="_orig_ip_bytes" key="orig_ip_bytes"/>
-            <attrKeyMap attr="sentPkts" key="resp_pkts"/>
             <attrKeyMap attr="_resp_ip_bytes" key="resp_ip_bytes"/>
             <attrKeyMap attr="ipId" key="tunnel_parents"/>
             <attrKeyMap attr="srcGeoCountryCode" key="orig_cc"/>
