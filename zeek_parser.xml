@@ -165,9 +165,6 @@
                 <regex><![CDATA[<destIpAddr:gPatIpAddr>|<destName:gPatHostName>.*\"<destIpAddr:gPatIpAddr>]]></regex>
             </collectFieldsByRegex>
         </when>
-        <when test="exist _proto">
-            <setEventAttribute attr="ipProto">convertStrToIntIpProto($_proto)</setEventAttribute>
-        </when>
         <when test="exist destName">
             <when test="exist destIpAddr">
                 <when test="not_private_ip destIpAddr">
@@ -183,6 +180,9 @@
         <when test="exist dnsQueryType">
             <setEventAttribute attr="eventType">combineMsgId("Zeek-",$_mod,"-", $dnsQueryType, "-Query-", $_result)</setEventAttribute>
         </when>
+    </when>
+    <when test="exist _proto">
+        <setEventAttribute attr="ipProto">convertStrToIntIpProto($_proto)</setEventAttribute>
     </when>
     <when test="$_mod = 'http'">
         <collectAndSetAttrByJSON src="$_body">
