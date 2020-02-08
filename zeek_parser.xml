@@ -9,6 +9,7 @@
         <regex><![CDATA[<_pri:gPatSyslogPRI><_mon:gPatMon>\s+<_day:gPatDay>\s+<_time:gPatTime>.*zeek_<_mod:gPatWord>\s+<_body:gPatMesgBody>]]></regex>
     </collectFieldsByRegex>
     <setEventAttribute attr="eventType">combineMsgId("Zeek-",$_mod)</setEventAttribute>
+    <!-- dhcp.log -->
     <when test="$_mod = 'dhcp'">
         <collectAndSetAttrByJSON src="$_body">
             <attrKeyMap attr="_eventTime" key="ts"/>
@@ -24,6 +25,7 @@
             <attrKeyMap attr="seqNum" key="trans_id"/>
         </collectAndSetAttrByJSON>
     </when>
+    <!-- files.log -->
     <when test="$_mod = 'files'">
         <collectAndSetAttrByJSON src="$_body">
             <attrKeyMap attr="_eventTime" key="ts"/>
@@ -50,6 +52,7 @@
             </collectFieldsByRegex>
         </when>
     </when>
+    <!-- conn.log -->
     <when test="$_mod = 'conn'">
         <collectAndSetAttrByJSON src="$_body">
             <attrKeyMap attr="_eventTime" key="ts"/>
@@ -89,6 +92,7 @@
             <attrKeyMap attr="totBytes" key="bytes"/>
         </collectAndSetAttrByJSON>
     </when>
+    <!-- notice.log -->
     <when test="$_mod = 'notice'">
         <collectAndSetAttrByJSON src="$_body">
             <attrKeyMap attr="_eventTime" key="ts"/>
@@ -107,6 +111,7 @@
             <attrKeyMap attr="_suppressFor" key="suppress_for"/>
         </collectAndSetAttrByJSON>
     </when>
+    <!-- radius.log -->
     <when test="$_mod = 'radius'">
         <collectAndSetAttrByJSON src="$_body">
             <attrKeyMap attr="_eventTime" key="ts"/>
@@ -123,6 +128,7 @@
             <attrKeyMap attr="_logged" key="logged"/>
         </collectAndSetAttrByJSON>
     </when>
+    <!-- dns.log -->
     <when test="$_mod = 'dns'">
         <collectAndSetAttrByJSON src="$_body">
             <attrKeyMap attr="_eventTime" key="ts"/>
@@ -184,6 +190,7 @@
     <when test="exist _proto">
         <setEventAttribute attr="ipProto">convertStrToIntIpProto($_proto)</setEventAttribute>
     </when>
+    <!-- http.log -->
     <when test="$_mod = 'http'">
         <collectAndSetAttrByJSON src="$_body">
             <attrKeyMap attr="_eventTime" key="ts"/>
@@ -211,6 +218,27 @@
         <when test="exist _srcIpAddr">
             <collectFieldsByRegex src="$_srcIpAddr">
                 <regex><![CDATA[<srcIpAddr:gPatIpAddr>]]></regex>
+            </collectFieldsByRegex>
+        </when>
+    </when>
+    <!-- software.log -->
+    <when test="$_mod = 'software'">
+        <collectAndSetAttrByJSON src="$_body">
+            <attrKeyMap attr="_eventTime" key="ts"/>
+            <attrKeyMap attr="_hostIpAddr" key="host"/>
+            <attrKeyMap attr="swType" key="software_type"/>
+            <attrKeyMap attr="swName" key="name"/>
+            <attrKeyMap attr="swVerMajor" key="version.major"/>
+            <attrKeyMap attr="swVerMinor" key="version.minor"/>
+            <attrKeyMap attr="swVerMinor2" key="version.minor2"/>
+            <attrKeyMap attr="swVerMinor3" key="version.minor3"/>
+            <attrKeyMap attr="swVerAddl" key="version.addl"/>
+            <attrKeyMap attr="unparsedVersion" key="unparsed_version"/>
+        </collectAndSetAttrByJSON>
+
+        <when test="exist _hostIpAddr">
+            <collectFieldsByRegex src="$_hostIpAddr">
+                <regex><![CDATA[<hostIpAddr:gPatIpAddr>]]></regex>
             </collectFieldsByRegex>
         </when>
     </when>
