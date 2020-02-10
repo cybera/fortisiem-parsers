@@ -202,8 +202,9 @@
         <collectAndSetAttrByJSON src="$_body">
             <attrKeyMap attr="_eventTime" key="ts"/>
             <attrKeyMap attr="_hostIpAddr" key="host"/>
+            <attrKeyMap attr="swProcName" key="name"/>
+            <!-- custom event attributes -->
             <attrKeyMap attr="swType" key="software_type"/>
-            <attrKeyMap attr="swName" key="name"/>
             <attrKeyMap attr="swVerMajor" key="version.major"/>
             <attrKeyMap attr="swVerMinor" key="version.minor"/>
             <attrKeyMap attr="swVerMinor2" key="version.minor2"/>
@@ -222,18 +223,30 @@
             <attrKeyMap attr="_destIpAddr" key="id.resp_h"/>
             <attrKeyMap attr="destIpPort" key="id.resp_p"/>
             <attrKeyMap attr="encryptAlgo" key="cipher_alg"/>
+            <attrKeyMap attr="_sshAuthSuccess" key="auth_success"/>
             <!-- custom event attributes -->
             <attrKeyMap attr="sshVer" key="version"/>
             <attrKeyMap attr="sshClientVer" key="client"/>
             <attrKeyMap attr="sshServerVer" key="server"/>
             <attrKeyMap attr="sshAuthAttempts" key="auth_attempts"/>
-            <attrKeyMap attr="sshAuthResult" key="auth_success"/>
             <attrKeyMap attr="keyExchAlgo" key="kex_alg"/>
             <attrKeyMap attr="compAlgo" key="compression_alg"/>
             <attrKeyMap attr="macAlg" key="mac_alg"/>
             <attrKeyMap attr="sshHostKeyExchAlgo" key="host_key_alg"/>
             <attrKeyMap attr="sshHostKey" key="host_key"/>
         </collectAndSetAttrByJSON>
+        <setEventAttribute attr="_result">Unknown</setEventAttribute>
+        <when test="exist _sshAuthSuccess">
+            <choose>
+                <when test="$_sshAuthSuccess = 'true'">
+                    <setEventAttribute attr="_result">Success</setEventAttribute>
+                </when>
+                <otherwise>
+                    <setEventAttribute attr="_result">Failed</setEventAttribute>
+                </otherwise>
+            </choose>
+        </when>
+        <setEventAttribute attr="eventType">combineMsgId("Zeek-",$_mod, "-Auth-", $_result)</setEventAttribute>
     </when>
     <!-- Parse all -->
     <when test="exist _proto">
