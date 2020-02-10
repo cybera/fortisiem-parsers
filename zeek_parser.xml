@@ -40,17 +40,6 @@
             <attrKeyMap attr="hashMD5" key="md5"/>
             <attrKeyMap attr="hashSHA1" key="sha1"/>
         </collectAndSetAttrByJSON>
-
-        <when test="exist _destIpAddr">
-            <collectFieldsByRegex src="$_destIpAddr">
-                <regex><![CDATA[<destIpAddr:gPatIpAddr>]]></regex>
-            </collectFieldsByRegex>
-        </when>
-        <when test="exist _srcIpAddr">
-            <collectFieldsByRegex src="$_srcIpAddr">
-                <regex><![CDATA[<srcIpAddr:gPatIpAddr>]]></regex>
-            </collectFieldsByRegex>
-        </when>
     </when>
     <!-- conn.log -->
     <when test="$_mod = 'conn'">
@@ -187,9 +176,6 @@
             <setEventAttribute attr="eventType">combineMsgId("Zeek-",$_mod,"-", $dnsQueryType, "-Query-", $_result)</setEventAttribute>
         </when>
     </when>
-    <when test="exist _proto">
-        <setEventAttribute attr="ipProto">convertStrToIntIpProto($_proto)</setEventAttribute>
-    </when>
     <!-- http.log -->
     <when test="$_mod = 'http'">
         <collectAndSetAttrByJSON src="$_body">
@@ -210,16 +196,6 @@
             <attrKeyMap attr="_httpStatusMsg" key="status_msg"/>
         </collectAndSetAttrByJSON>
 
-        <when test="exist _destIpAddr">
-            <collectFieldsByRegex src="$_destIpAddr">
-                <regex><![CDATA[<destIpAddr:gPatIpAddr>]]></regex>
-            </collectFieldsByRegex>
-        </when>
-        <when test="exist _srcIpAddr">
-            <collectFieldsByRegex src="$_srcIpAddr">
-                <regex><![CDATA[<srcIpAddr:gPatIpAddr>]]></regex>
-            </collectFieldsByRegex>
-        </when>
     </when>
     <!-- software.log -->
     <when test="$_mod = 'software'">
@@ -235,11 +211,47 @@
             <attrKeyMap attr="swVerAddl" key="version.addl"/>
             <attrKeyMap attr="unparsedVersion" key="unparsed_version"/>
         </collectAndSetAttrByJSON>
-
-        <when test="exist _hostIpAddr">
-            <collectFieldsByRegex src="$_hostIpAddr">
-                <regex><![CDATA[<hostIpAddr:gPatIpAddr>]]></regex>
-            </collectFieldsByRegex>
-        </when>
+    </when>
+    <!-- ssh.log -->
+    <when test="$_mod = 'ssh'">
+        <collectAndSetAttrByJSON src="$_body">
+            <attrKeyMap attr="_eventTime" key="ts"/>
+            <attrKeyMap attr="ipConnId" key="uid"/>
+            <attrKeyMap attr="_srcIpAddr" key="id.orig_h"/>
+            <attrKeyMap attr="srcIpPort" key="id.orig_p"/>
+            <attrKeyMap attr="_destIpAddr" key="id.resp_h"/>
+            <attrKeyMap attr="destIpPort" key="id.resp_p"/>
+            <attrKeyMap attr="encryptAlgo" key="cipher_alg"/>
+            <!-- custom event attributes -->
+            <attrKeyMap attr="sshVer" key="version"/>
+            <attrKeyMap attr="sshClientVer" key="client"/>
+            <attrKeyMap attr="sshServerVer" key="server"/>
+            <attrKeyMap attr="sshAuthAttempts" key="auth_attempts"/>
+            <attrKeyMap attr="sshAuthResult" key="auth_success"/>
+            <attrKeyMap attr="keyExchAlgo" key="kex_alg"/>
+            <attrKeyMap attr="compAlgo" key="compression_alg"/>
+            <attrKeyMap attr="macAlg" key="mac_alg"/>
+            <attrKeyMap attr="sshHostKeyExchAlgo" key="host_key_alg"/>
+            <attrKeyMap attr="sshHostKey" key="host_key"/>
+        </collectAndSetAttrByJSON>
+    </when>
+    <!-- Parse all -->
+    <when test="exist _proto">
+        <setEventAttribute attr="ipProto">convertStrToIntIpProto($_proto)</setEventAttribute>
+    </when>
+    <when test="exist _destIpAddr">
+        <collectFieldsByRegex src="$_destIpAddr">
+            <regex><![CDATA[<destIpAddr:gPatIpAddr>]]></regex>
+        </collectFieldsByRegex>
+    </when>
+    <when test="exist _srcIpAddr">
+        <collectFieldsByRegex src="$_srcIpAddr">
+            <regex><![CDATA[<srcIpAddr:gPatIpAddr>]]></regex>
+        </collectFieldsByRegex>
+    </when>
+    <when test="exist _hostIpAddr">
+        <collectFieldsByRegex src="$_hostIpAddr">
+            <regex><![CDATA[<hostIpAddr:gPatIpAddr>]]></regex>
+        </collectFieldsByRegex>
     </when>
 </parsingInstructions>
