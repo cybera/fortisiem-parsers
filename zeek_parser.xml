@@ -50,14 +50,13 @@
             <attrKeyMap attr="srcIpPort" key="id.orig_p"/>
             <attrKeyMap attr="destIpAddr" key="id.resp_h"/>
             <attrKeyMap attr="destIpPort" key="id.resp_p"/>
-            <attrKeyMap attr="tcpFlags" key="history"/>
+            <attrKeyMap attr="zeekTcpFlags" key="history"/>
             <attrKeyMap attr="_proto" key="proto"/>
             <attrKeyMap attr="duration" key="duration"/>
             <attrKeyMap attr="status" key="conn_state"/>
             <attrKeyMap attr="localOrig" key="local_orig"/>
             <attrKeyMap attr="duration" key="local_orig"/>
             <attrKeyMap attr="missedBytes" key="missed_bytes"/>
-            <attrKeyMap attr="tcpFlags" key="history"/>
             <!-- orig_*: Sent by originator (i.e. sent) -->
             <!-- resp_*: Sent by responder (i.e. recv) -->
             <attrKeyMap attr="sentBytes64" key="orig_bytes"/>
@@ -116,6 +115,9 @@
             <attrKeyMap attr="authResult" key="result"/>
             <attrKeyMap attr="_logged" key="logged"/>
         </collectAndSetAttrByJSON>
+        <when test="exist authResult">
+            <setEventAttribute attr="eventType">combineMsgId("Zeek-",$_mod,"-", $authResult)</setEventAttribute>
+        </when>
     </when>
     <!-- dns.log -->
     <when test="$_mod = 'dns'">
