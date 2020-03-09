@@ -15,9 +15,7 @@
             <attrKeyMap attr="_eventTime" key="ts"/>
             <attrKeyMap attr="ipConnId" key="uid"/>
             <attrKeyMap attr="srcIpAddr" key="client_addr"/>
-            <!-- <attrKeyMap attr="srcIpPort" key="id.orig_p"/> -->
             <attrKeyMap attr="destIpAddr" key="server_addr"/>
-            <!-- <attrKeyMap attr="destIpPort" key="id.resp_p"/> -->
             <attrKeyMap attr="hostMACAddr" key="mac"/>
             <attrKeyMap attr="_requestedIpAddr" key="requested_addr"/>
             <attrKeyMap attr="hostIpAddr" key="assigned_ip"/>
@@ -97,7 +95,15 @@
             <attrKeyMap attr="peerDescr" key="peer_descr"/>
             <attrKeyMap attr="_actions" key="actions"/>
             <attrKeyMap attr="_suppressFor" key="suppress_for"/>
+            <attrKeyMap attr="_src" key="src"/>
+            <attrKeyMap attr="_dest" key="dest"/>
         </collectAndSetAttrByJSON>
+        <when test="exist _src">
+            <setEventAttribute attr="srcIpAddr">$_src</setEventAttribute>
+        </when>
+        <when test="exist _dest">
+            <setEventAttribute attr="destIpAddr">$_dest</setEventAttribute>
+        </when>
     </when>
     <!-- radius.log -->
     <when test="$_mod = 'radius'">
