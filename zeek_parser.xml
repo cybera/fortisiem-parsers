@@ -104,6 +104,12 @@
         <when test="exist _dest">
             <setEventAttribute attr="destIpAddr">$_dest</setEventAttribute>
         </when>
+        <when test="$note = 'SSH::Password_Guessing'">
+            <!-- get the IP from the msg field -->
+            <collectFieldsByRegex src="$msg">
+                <regex><![CDATA[<srcIpAddr:gPatIpAddr>\s]]></regex>
+            </collectFieldsByRegex>
+        </when>
     </when>
     <!-- radius.log -->
     <when test="$_mod = 'radius'">
