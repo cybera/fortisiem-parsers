@@ -262,6 +262,38 @@
         </when>
         <setEventAttribute attr="eventType">combineMsgId("Zeek-",$_mod, "-Auth-", $_result)</setEventAttribute>
     </when>
+    <!-- ssl.log -->
+    <when test="$_mod = 'ssl'">
+        <collectAndSetAttrByJSON src="$_body">
+            <attrKeyMap attr="_eventTime" key="ts"/>
+            <attrKeyMap attr="ipConnId" key="uid"/>
+            <attrKeyMap attr="srcIpAddr" key="id.orig_h"/>
+            <attrKeyMap attr="srcIpPort" key="id.orig_p"/>
+            <attrKeyMap attr="destIpAddr" key="id.resp_h"/>
+            <attrKeyMap attr="destIpPort" key="id.resp_p"/>
+            <attrKeyMap attr="version" key="version"/>
+            <attrKeyMap attr="_cipher" key="cipher"/>
+            <attrKeyMap attr="_resumed" key="resumed"/>
+            <attrKeyMap attr="_established" key="established"/>
+            <attrKeyMap attr="_certSubject" key="subject"/>
+            <attrKeyMap attr="_validationStatus" key="validation_status"/>
+        </collectAndSetAttrByJSON>
+    </when>
+    <!-- rdp.log -->
+    <when test="$_mod = 'rdp'">
+        <collectAndSetAttrByJSON src="$_body">
+            <attrKeyMap attr="_eventTime" key="ts"/>
+            <attrKeyMap attr="ipConnId" key="uid"/>
+            <attrKeyMap attr="srcIpAddr" key="id.orig_h"/>
+            <attrKeyMap attr="srcIpPort" key="id.orig_p"/>
+            <attrKeyMap attr="destIpAddr" key="id.resp_h"/>
+            <attrKeyMap attr="destIpPort" key="id.resp_p"/>
+            <attrKeyMap attr="_cookie" key="cookie"/>
+            <attrKeyMap attr="_result" key="result"/>
+            <attrKeyMap attr="_secProtocol" key="security_protocol"/>
+            <attrKeyMap attr="_certCount" key="cert_count"/>
+        </collectAndSetAttrByJSON>
+    </when>
     <!-- Parse all -->
     <when test="exist _proto">
         <setEventAttribute attr="ipProto">convertStrToIntIpProto($_proto)</setEventAttribute>
