@@ -57,12 +57,13 @@
             <attrKeyMap attr="missedBytes" key="missed_bytes"/>
             <!-- orig_*: Sent by originator (i.e. sent) -->
             <!-- resp_*: Sent by responder (i.e. recv) -->
-            <attrKeyMap attr="sentBytes64" key="orig_bytes"/>
+            <attrKeyMap attr="sentBytes64" key="orig_ip_bytes"/>
+            <attrKeyMap attr="recvBytes64" key="resp_ip_bytes"/>
             <attrKeyMap attr="sentPkts" key="orig_pkts"/>
-            <attrKeyMap attr="recvBytes64" key="resp_bytes"/>
             <attrKeyMap attr="recvPkts" key="resp_pkts"/>
-            <attrKeyMap attr="_orig_ip_bytes" key="orig_ip_bytes"/>
-            <attrKeyMap attr="_resp_ip_bytes" key="resp_ip_bytes"/>
+            <!-- orig/resp_bytes are inaccurate-->
+            <attrKeyMap attr="_orig_bytes" key="orig_bytes"/>
+            <attrKeyMap attr="_resp_bytes" key="resp_bytes"/>
             <attrKeyMap attr="ipId" key="tunnel_parents"/>
             <attrKeyMap attr="srcGeoCountryCode" key="orig_cc"/>
             <attrKeyMap attr="destGeoCountryCode" key="resp_cc"/>
