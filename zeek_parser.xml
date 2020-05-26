@@ -296,6 +296,9 @@
         </collectAndSetAttrByJSON>
     </when>
     <!-- Parse all -->
+    <when test="exist _eventTime">
+        <setEventAttribute attr="eventTime">$_eventTime</setEventAttribute>
+    </when>
     <when test="exist _proto">
         <setEventAttribute attr="ipProto">convertStrToIntIpProto($_proto)</setEventAttribute>
     </when>
