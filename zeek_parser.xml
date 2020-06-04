@@ -295,6 +295,23 @@
             <attrKeyMap attr="_certCount" key="cert_count"/>
         </collectAndSetAttrByJSON>
     </when>
+    <!-- x509.log -->
+    <when test="$_mod = 'x509'">
+        <collectAndSetAttrByJSON src="$_body">
+            <attrKeyMap attr="_eventTime" key="ts"/>
+            <attrKeyMap attr="ipConnId" key="id"/>
+            <attrKeyMap attr="certificateVersion" key="certificate.version"/>
+            <attrKeyMap attr="certificateExpiry" key="certificate.not_valid_after"/>
+            <attrKeyMap attr="certificateStart" key="certificate.not_valid_before"/>
+            <attrKeyMap attr="certificateSubject" key="certificate.subject"/>
+            <attrKeyMap attr="certificateIssuer" key="certificate.issuer"/>
+            <attrKeyMap attr="certificateSerial" key="certificate.serial"/>
+            <attrKeyMap attr="certificateKeyLength" key="certificate.key_length"/>
+            <attrKeyMap attr="keyType" key="certificate.key_type"/>
+            <attrKeyMap attr="signatureType" key="certificate.sig_alg"/>
+            <attrKeyMap attr="_certificateExponent" key="certificate.exponent"/>
+        </collectAndSetAttrByJSON>
+    </when>
     <!-- Parse all -->
     <when test="exist _eventTime">
         <setEventAttribute attr="eventTime">$_eventTime</setEventAttribute>
