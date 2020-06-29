@@ -50,6 +50,7 @@
             <attrKeyMap attr="destIpPort" key="id.resp_p"/>
             <attrKeyMap attr="zeekTcpFlags" key="history"/>
             <attrKeyMap attr="_proto" key="proto"/>
+            <attrKeyMap attr="zeekService" key="service"/>
             <attrKeyMap attr="duration" key="duration"/>
             <attrKeyMap attr="status" key="conn_state"/>
             <attrKeyMap attr="localOrig" key="local_orig"/>
