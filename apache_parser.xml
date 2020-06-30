@@ -1,0 +1,99 @@
+<patternDefinitions>
+<pattern name="patApacheMod"><![CDATA[apache:]]></pattern>
+<pattern name="patQuote"><![CDATA[[^"]*]]></pattern>
+</patternDefinitions>
+<eventFormatRecognizer><![CDATA[<:gPatSyslogPRI>\s*<:gPatMon>\s+<:gPatDay>\s+<:gPatTime>\s+<:gPatStr>\s+<:patApacheMod>\s+(?:\d+\s+)?(?:\[<:gPatStr>\s+<:gPatStr>\s+<:gPatStr>\]\s+)?<:gPatIpAddr>\s+(?:<:gPatIpAddr>\s+)?-\s+<:gPatStr>]]></eventFormatRecognizer>
+<parsingInstructions>
+<!-- parsing common fields -->
+<!-- sample message
+<174>Jun 29 12:49:20 www apache: 192.168.1.10 - - [29/Jun/2020:18:49:20 +0000] "GET / HTTP/1.1" 301 230 "-" "Pingdom.com_bot_version_1.4_(http://www.pingdom.com/)"
+<174>Jun 29 13:45:39 www apache: 10.10.10.10 - - [29/Jun/2020:19:45:39 +0000] "GET /assets/Uploads/_resampled/resizedimage.png HTTP/1.1" 200 248404 "-" "Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; Touch; rv:11.0) like Gecko"
+-->
+<switch>
+<case>
+<collectFieldsByRegex src="$_rawmsg">
+<regex><![CDATA[<:gPatSyslogPRI>\s*<:gPatMon>\s+<:gPatDay> <:gPatTime> <:gPatStr>\s+apache:?\s+(?:\d+\s+)?<_body:gPatMesgBody>]]></regex>
+</collectFieldsByRegex>
+</case>
+<case>
+<collectFieldsByRegex src="$_rawmsg">
+<regex><![CDATA[<:gPatSyslogPRI>\s*<:gPatMon>\s+<:gPatDay> <:gPatTime> <:gPatStr>\s+apache:\s+\[<:gPatStr> <:gPatStr> <:gPatStr>\]\s+<_body:gPatMesgBody>]]></regex>
+</collectFieldsByRegex>
+</case>
+<case>
+<collectFieldsByRegex src="$_rawmsg">
+<regex><![CDATA[<:gPatSyslogPRI>\s*<:gPatMon>\s+<:gPatDay> <:gPatTime> <:gPatStr>\s+apache:\s+\[<:gPatStr> <:gPatStr> <:gPatStr>\]\s+<_body:gPatMesgBody>]]></regex>
+</collectFieldsByRegex>
+</case>
+<case>
+<collectFieldsByRegex src="$_rawmsg">
+<regex><![CDATA[<:gPatSyslogPRI>\s*<:gPatMon>\s+<:gPatDay> <:gPatTime> <:gPatStr>\s+apache:\s+<_body:gPatMesgBody>]]></regex>
+</collectFieldsByRegex>
+</case>
+</switch>
+<setEventAttribute attr="eventAction">0</setEventAttribute>
+<setEventAttribute attr="destIpAddr">$reptDevIpAddr</setEventAttribute>
+<setEventAttribute attr="eventType">Apache-Web-Generic</setEventAttribute>
+<setEventAttribute attr="totFlows">1</setEventAttribute>
+<switch>
+<case>
+<collectFieldsByRegex src="$_body">
+<regex><![CDATA[<srcIpAddr:gPatIpAddr> <:gPatStr> <_user:gPatStr> \[<_day:gPatDay>/<_mon:gPatMon>/<_year:gPatYear>:<_time:gPatTime><_devTime:gPatStrRightSB>\] "<httpMethod:gPatStr> <_uriStem:gPatStr> <httpVersion:gPatStr>" <httpStatusCode:gPatInt> <recvBytes64:gPatStr>(?:\s+"<httpReferrer:patQuote>" "<httpUserAgent:patQuote>")?]]></regex>
+</collectFieldsByRegex>
+<setEventAttribute attr="deviceTime">toDateTime($_mon, $_day, $_year, $_time)</setEventAttribute>
+<!-- translate status code into severity and event type -->
+<choose>
+<when test="matches($httpStatusCode, '^2')">
+<setEventAttribute attr="eventType">Apache-Web-Request-Success</setEventAttribute>
+<setEventAttribute attr="eventSeverity">1</setEventAttribute>
+</when>
+<when test="matches($httpStatusCode, '^3')">
+<setEventAttribute attr="eventType">Apache-Web-Request-Redirect</setEventAttribute>
+<setEventAttribute attr="eventSeverity">1</setEventAttribute>
+</when>
+<when test="matches($httpStatusCode, '^401')">
+<setEventAttribute attr="eventType">Apache-Web-Client-Access-Denied</setEventAttribute>
+<setEventAttribute attr="eventSeverity">5</setEventAttribute>
+</when>
+<when test="matches($httpStatusCode, '^403')">
+<setEventAttribute attr="eventType">Apache-Web-Forbidden-Access-Denied</setEventAttribute>
+<setEventAttribute attr="eventSeverity">5</setEventAttribute>
+</when>
+<when test="matches($httpStatusCode, '^400')">
+<setEventAttribute attr="eventType">Apache-Web-Bad-Request</setEventAttribute>
+<setEventAttribute attr="eventSeverity">5</setEventAttribute>
+</when>
+<when test="matches($httpStatusCode, '^411')">
+<setEventAttribute attr="eventType">Apache-Web-Length-Reqd-Access-Denied</setEventAttribute>
+<setEventAttribute attr="eventSeverity">5</setEventAttribute>
+</when>
+<when test="matches($httpStatusCode, '^4')">
+<setEventAttribute attr="eventType">Apache-Web-Client-Error</setEventAttribute>
+<setEventAttribute attr="eventSeverity">5</setEventAttribute>
+</when>
+<when test="matches($httpStatusCode, '^5')">
+<setEventAttribute attr="eventType">Apache-Web-Server-Error</setEventAttribute>
+<setEventAttribute attr="eventSeverity">6</setEventAttribute>
+</when>
+</choose>
+<switch>
+<case>
+<collectFieldsByRegex src="$_uriStem">
+<regex><![CDATA[<uriStem:gPatStr>\?<_query:gPatMesgBody>]]></regex>
+</collectFieldsByRegex>
+<collectAndSetAttrByKeyValuePair sep="&amp;" src="$_query">
+<attrKeyMap attr="groupName" key="name="/>
+<attrKeyMap attr="procName" key="phProcessName="/>
+</collectAndSetAttrByKeyValuePair>
+</case>
+<default>
+<setEventAttribute attr="uriStem">$_uriStem</setEventAttribute>
+</default>
+</switch>
+<when test="$_user != '-'">
+<setEventAttribute attr="user">$_user</setEventAttribute>
+</when>
+</case>
+<default/>
+</switch>
+</parsingInstructions>
