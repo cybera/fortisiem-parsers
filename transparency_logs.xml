@@ -1,0 +1,32 @@
+<eventFormatRecognizer><![CDATA[\[PH_DEV_MON_CUSTOM_JSON\]:]]></eventFormatRecognizer>
+<parsingInstructions>
+    <collectFieldsByRegex src="$_rawmsg">
+        <regex><![CDATA[\[PH_DEV_MON_CUSTOM_JSON\]:<_body:gPatMesgBodyMin>,\[json\]=<_json:gPatMesgBodyMin>\s*$]]></regex>
+    </collectFieldsByRegex>
+    <collectAndSetAttrBySymbol sep=",[" src="$_body" symEnd="]=" symStart="["/>
+    <setEventAttribute attr="eventType">combineMsgId($reptVendor, "-", $reptModel, "-JSON")</setEventAttribute>
+    <when test="$reptVendor = 'Cybera'">
+        <when test="$reptModel = 'TLS'">
+            <!-- attribute mapping -->
+            <collectAndSetAttrByJSON src="$_json">
+                <attrKeyMap attr="_id" key="id"/>
+                <attrKeyMap attr="tbs_sha256" key="tbs_sha256"/>
+                <attrKeyMap attr="_dns_names" key="dns_names"/>
+                <attrKeyMap attr="_issuer" key="issuer"/>
+                <attrKeyMap attr="_pubkey_sha256" key="pubkey_sha256"/>
+                <attrKeyMap attr="startTime" key="not_before"/>
+                <attrKeyMap attr="certificateExpiry" key="not_after"/>
+            </collectAndSetAttrByJSON>
+            <when test="exist _dns_names">
+                <collectFieldsByRegex src="$_dns_names">
+                    <regex><![CDATA[<certificateDNS:gPatHostName>.*\"]]></regex>
+                </collectFieldsByRegex>
+            </when>
+            <when test="exist _issuer">
+                <collectAndSetAttrByJSON src="$_issuer">
+                    <attrKeyMap attr="certificateIssuer" key="name"/>
+                </collectAndSetAttrByJSON>
+            </when>
+        </when>
+    </when>
+</parsingInstructions>
